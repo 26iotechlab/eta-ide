@@ -2,7 +2,7 @@
 
 # Eta IDE
 
-**The open-source AI code editor that plans, builds and verifies every change.**
+**The open-source agentic IDE that plans, builds and tests every change.**
 
 [Download](https://github.com/26iotechlab/eta-ide/releases/latest) · [Report a problem](https://github.com/26iotechlab/eta-ide/issues) · [26io.com](https://26io.com)
 
@@ -10,7 +10,7 @@
 
 ---
 
-Eta IDE is a desktop code editor with an AI agent built in. Describe what you want in plain words. Eta plans the work,
+Eta IDE is an agentic IDE: a desktop code editor with an AI agent built in that does the work itself. Describe what you want in plain words. Eta plans the work,
 edits your files, runs the terminal, and checks the result before it tells you it is done. You watch every step, and
 you can undo any run with one click.
 
