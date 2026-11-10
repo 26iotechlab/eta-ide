@@ -1,0 +1,180 @@
+{
+  "name": "eta-agent",
+  "displayName": "Eta IDE Agent",
+  "description": "The built-in agent of Eta IDE. Plans, edits code, runs commands and checks its own work, on the model you choose.",
+  "version": "0.1.0",
+  "publisher": "26io",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Machine Learning",
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "Eta Black",
+        "uiTheme": "vs-dark",
+        "path": "./themes/eta-black.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "eta",
+          "title": "Agent",
+          "icon": "media/eta.svg"
+        }
+      ]
+    },
+    "views": {
+      "eta": [
+        {
+          "id": "eta.agent",
+          "name": "Agent",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "eta.openManager",
+        "title": "Eta: Open Manager View (full tab)",
+        "icon": "$(layout-panel-left)"
+      },
+      {
+        "command": "eta.newTask",
+        "title": "Eta: New Task"
+      },
+      {
+        "command": "eta.stop",
+        "title": "Eta: Stop Agent"
+      },
+      {
+        "command": "eta.openBrowser",
+        "title": "Eta: Open Browser Preview"
+      },
+      {
+        "command": "eta.splitBrowser",
+        "title": "Eta: Split Browser Beside Editor",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "eta.inlineEdit",
+        "title": "Eta: Edit Selection (inline)"
+      },
+      {
+        "command": "eta.importSettings",
+        "title": "Eta: Import Settings from VS Code / Cursor"
+      },
+      {
+        "command": "eta.togglePanel",
+        "title": "Eta: Show or Hide Agent Panel"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "eta.openManager",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "eta.splitBrowser",
+        "key": "ctrl+alt+b"
+      },
+      {
+        "command": "eta.inlineEdit",
+        "key": "ctrl+k",
+        "mac": "cmd+k",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "eta.togglePanel",
+        "key": "ctrl+alt+a"
+      }
+    ],
+    "configuration": {
+      "title": "Eta IDE",
+      "properties": {
+        "eta.enginePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Eta engine (the 'console' folder). Empty = use the copy bundled inside the extension."
+        },
+        "eta.ollamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama base URL."
+        },
+        "eta.model": {
+          "type": "string",
+          "default": "eta-r3",
+          "description": "Main agent model."
+        },
+        "eta.memoryModel": {
+          "type": "string",
+          "default": "eta-r3",
+          "description": "Model for the memory agent."
+        },
+        "eta.numCtx": {
+          "type": "number",
+          "default": 16384,
+          "description": "Context window."
+        },
+        "eta.maxSteps": {
+          "type": "number",
+          "default": 24,
+          "description": "Max agent tool-steps per task."
+        },
+        "eta.autoApproveEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "Apply file edits without asking."
+        },
+        "eta.autoApproveCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run shell commands without asking."
+        },
+        "eta.browserHeadless": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run the built-in agent browser headless (no visible window)."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "workbench.startupEditor": "none",
+      "workbench.welcomePage.walkthroughs.openOnInstall": false,
+      "workbench.colorTheme": "Eta Black",
+      "workbench.panel.defaultLocation": "right",
+      "telemetry.telemetryLevel": "off",
+      "chat.commandCenter.enabled": false,
+      "chat.experimental.offerSetup": false
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "playwright-core": "^1.61.1"
+  },
+  "license": "Apache-2.0"
+}

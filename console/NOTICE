@@ -1,0 +1,11 @@
+Eta IDE
+Copyright 2026 26io Techlab
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes third-party software under their own licences:
+- The editor base: Code - OSS, MIT License, Copyright (c) Microsoft Corporation
+  (resources/app/LICENSE.txt and resources/app/ThirdPartyNotices.txt).
+- The streaming engine used by Eta Engine: Apache License 2.0
+  (console/THIRD-PARTY-NOTICES.txt).
+- AI models downloaded by the user keep their own licences.

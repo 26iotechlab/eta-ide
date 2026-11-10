@@ -1,0 +1,40 @@
+node_modules/
+vendor/llama.cpp*/
+.hf-cache/
+*.gguf
+*.log
+.env
+# private notes, logs and backups (never publish)
+NEXT-STEPS.md
+*.log
+brand/original-backup/
+brand/debrand-backup/
+_dropped-standalone-app/
+# build output (shipped as the installer, not as source)
+dist/
+# test leftovers and local data
+console/.sys-sandbox/
+console/.test-sandbox/
+console/.hf-cache/
+.eta/
+**/.eta/
+console/uitest.mjs
+console/genimgs.mjs
+console/hardimg*.mjs
+# new-base build output and downloaded third-party language helpers (231 MB, from Open VSX)
+build/
+eta-layer/lang/
+release/
+installer/make.log
+installer/eta-ide.iss
+# GitHub profile page text (lives in gokulr-26io/gokulr-26io, not in this project)
+github-profile/
+# extension: build tools and output (built by build-eta.mjs from extension/src)
+extension/node_modules/
+extension/dist/
+# old built copy of the extension (replaced by extension/) and the old one-off fix scripts for the first build
+eta-layer/eta-agent/
+ide-patches/
+installer/make-job.cmd
+__pycache__/
+*.pyc

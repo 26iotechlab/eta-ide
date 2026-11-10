@@ -1,0 +1,28 @@
+# Eta IDE — inbuilt code-completion model ("Tab" autocomplete).
+#
+# ITS JOB: fill in code AT THE CURSOR, given the code BEFORE (prefix) and AFTER
+# (suffix) it. This is Fill-In-the-Middle (FIM) — NOT chat. There is no natural-
+# language system prompt: a base code model is "instructed" through its FIM token
+# format. Ollama turns our /api/generate {prompt, suffix} into the model's native
+# <|fim_prefix|> … <|fim_suffix|> … <|fim_middle|> sequence via the template it
+# inherits from the base, and the model outputs ONLY the missing middle.
+#
+# WHY THIS MODEL: qwen2.5-coder-1.5b-base is the strongest ~1B-class code model with
+# first-class FIM support — instant on a GPU, good enough to be useful, small enough
+# to bundle. Ollama runs it on the user's GPU automatically (CUDA / Metal / ROCm)
+# when one is present, else CPU.
+FROM qwen2.5-coder:1.5b-base
+
+# Deterministic-ish, short, single-shot completions — autocomplete, not prose.
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER num_predict 96
+PARAMETER repeat_penalty 1.05
+
+# Stop as soon as the model tries to open a new FIM/section block — that's the sign
+# it has finished the middle and is hallucinating more file structure.
+PARAMETER stop "<|fim_pad|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|file_sep|>"
+PARAMETER stop "<|repo_name|>"
+PARAMETER stop "<|fim_prefix|>"
