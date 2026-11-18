@@ -24,6 +24,7 @@ console/hardimg*.mjs
 # new-base build output and downloaded third-party language helpers (231 MB, from Open VSX)
 build/
 eta-layer/lang/
+eta-layer/python/
 release/
 installer/make.log
 installer/eta-ide.iss

@@ -1,6 +1,9 @@
 import http from "http";
-import { startMcp, testMcpServer } from "./mcp.mjs";
-import fs from "fs";
+import fs from "fs"; import os from "os"; import path from "path";
+// Folder trust (2026-11-15): project tool servers start only in a trusted folder. Use a temp home so the real trust list is not touched.
+{ const h = fs.mkdtempSync(path.join(os.tmpdir(), "eta-webmcp-")); process.env.USERPROFILE = h; process.env.HOME = h; }
+const { startMcp, testMcpServer } = await import("./mcp.mjs");
+const { setTrusted } = await import("./pathguard.mjs");
 let seenSession = null, calls = 0;
 const srv = http.createServer((req, res) => {
   let b = ""; req.on("data", c => b += c); req.on("end", () => {
@@ -18,10 +21,11 @@ const srv = http.createServer((req, res) => {
   });
 }).listen(0, async () => {
   const url = "http://127.0.0.1:" + srv.address().port + "/mcp";
-  const ws = "D:/tmp/webws"; fs.mkdirSync(ws + "/.eta", { recursive: true });
+  const ws = "D:/eta-ide/dev-scratch/webws"; fs.mkdirSync(ws + "/.eta", { recursive: true });
   console.log("bad key:", JSON.stringify(await testMcpServer("w", { url, headers: { Authorization: "Bearer wrong" } }, ws)));
   fs.writeFileSync(ws + "/.eta/mcp.json", JSON.stringify({ mcpServers: { w: { url, headers: { Authorization: "Bearer secret" } } } }));
   console.log("good:", JSON.stringify(await testMcpServer("w", { url, headers: { Authorization: "Bearer secret" } }, ws)));
+  setTrusted(ws, true);
   const hub = await startMcp(ws, () => {});
   console.log("tools:", hub.tools.map(t => t.fullName));
   console.log("call:", JSON.stringify(await hub.call("mcp__w__echo", { text: "hi" })), "session seen:", seenSession);

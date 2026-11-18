@@ -28,7 +28,8 @@ has been checked.**
   errors, and goes back to fix a failing command before it finishes. Anything it could not fix is reported plainly,
   never hidden behind a "done".
 - **Safe by design.** A strict terminal policy blocks dangerous commands, asks you before risky ones, and keeps the
-  agent inside your project folder.
+  agent inside your project folder. By default Eta also asks before it edits a file or runs a command; tick
+  **Edit automatically** in the Agent panel if you want it to work without asking.
 - **Private by default.** Run models on your own computer. No telemetry. Your code only leaves your machine if you
   choose a cloud model.
 - **Your model, your choice.** Local models or any provider, switched in one place.
@@ -69,6 +70,10 @@ has been checked.**
 
 - **One-click Undo** for every run. Before each task Eta saves a private snapshot of your project, kept apart from
   your own git history, branches and staged files.
+- **Review and rewind:** after a run you can look at every changed block and undo just one block, or go back to the
+  exact step after any file edit. Your state is saved first, so you can come forward again.
+- **You approve file edits by default.** Eta shows the changed lines before it writes (turn on "Edit automatically" in the
+  panel to skip the question).
 - One chat history per project folder.
 
 ### Knowledge and research
@@ -80,11 +85,19 @@ has been checked.**
 
 ### Workspace
 
-- **Live token meter:** tokens read and written, and the speed, while the agent works.
+- **Live token meter:** tokens read and written, the speed, and how full the model's memory window is.
+- **@-mentions:** type `@` in the message box to attach a file or folder of your project (`@src/app.js`).
+- **Edit selected code (Ctrl+Alt+K):** describe the change, look at it as a diff, then apply or discard it.
+- **Tab completion** (off by default, turn it on in settings): grey suggestions while you type. It pauses while the agent works.
+- The agent also sees the file you have open, your cursor line and the errors your editor shows.
 - **Update notice** in the panel when a new version is released. Nothing installs by itself.
 - Clean black-and-white theme, designed for long sessions.
 - Import your settings and keyboard shortcuts from your previous editor in one step.
 - Full code editor with language support for Python, Go, C and C++, C#, Rust, JavaScript and TypeScript, and more.
+
+## Results
+
+With an open-source model on a normal home PC, the Eta agent solved **about 65 % of small coding tasks (hidden tests) where the earlier version solved 20 %**, and **68 % against 50 % for the same model used alone** (34 of 50 task runs against 25 of 50). Details, tables and honest limits: [BENCHMARKS.md](BENCHMARKS.md).
 
 ## Models
 
@@ -129,3 +142,26 @@ Eta IDE is released under the [Apache License 2.0](LICENSE).
 Copyright 2026 [26io Techlab](https://26io.com).
 
 Eta IDE includes open-source components under their own licences; see [NOTICE](NOTICE).
+
+## Use Eta inside Zed or JetBrains (ACP)
+
+`console/acp.mjs` lets editors that speak the Agent Client Protocol (ACP, https://agentclientprotocol.com) use Eta as their agent. It is a small bridge: it talks ACP over stdin and stdout, and it sends the work to an Eta engine that is already running on this PC.
+
+1. Start Eta first (the Eta IDE, or `node server.mjs` in `console`). The bridge looks for the engine at `http://127.0.0.1:8713`. If your engine uses another port, set `ETA_ENGINE_URL`, for example `http://127.0.0.1:8710`.
+2. Zed: add this to `settings.json`:
+
+   ```json
+   "agent_servers": {
+     "Eta": {
+       "command": "node",
+       "args": ["D:/eta-ide/project/console/acp.mjs"],
+       "env": { "ETA_ENGINE_URL": "http://127.0.0.1:8713" }
+     }
+   }
+   ```
+
+3. JetBrains (AI Assistant, custom ACP agent): add an agent with the same command `node`, the same argument, and the same environment variable.
+
+What works: new sessions (the editor's project folder becomes Eta's workspace), prompts, Eta's tool steps shown as tool calls, approval questions shown as the editor's Allow or Reject prompt, plan approval, and Stop (cancel). Plain questions are answered as chat. Not supported yet: loading old sessions, images, and editor-side MCP servers.
+
+If the engine is not running, the editor shows the error "Eta engine not reachable". Test: `node console/test-acp.mjs` (uses a fake engine, no model).

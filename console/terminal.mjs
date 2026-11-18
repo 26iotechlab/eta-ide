@@ -11,6 +11,7 @@
 // is stopped on timeout, output cleaned (no colour codes, no progress bars) and cut to head + tail.
 import { spawn, spawnSync, execFile } from "child_process";
 import path from "path"; import fs from "fs"; import os from "os";
+import { redact, safeEnv } from "./redact.mjs";
 
 const WIN = process.platform === "win32";
 
@@ -140,12 +141,14 @@ export const QUIET_ENV = {
   PYTHONIOENCODING: "utf-8", GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never", GIT_PAGER: "cat", PAGER: "cat", DOTNET_CLI_TELEMETRY_OPTOUT: "1",
   DOTNET_NOLOGO: "1", NEXT_TELEMETRY_DISABLED: "1", ASTRO_TELEMETRY_DISABLED: "1", BROWSER: "none",
 };
-function childEnv() { const e = { ...process.env, ...QUIET_ENV }; delete e.ELECTRON_RUN_AS_NODE; for (const k of Object.keys(e)) if (/^(VSCODE_|ELECTRON_)/.test(k)) delete e[k]; return e; }
+// 2026-11-15c: secrets (*_KEY, *_TOKEN, *SECRET*, *PASSWORD*) are not handed to commands the model runs (see redact.mjs).
+function childEnv() { const e = { ...safeEnv(process.env), ...QUIET_ENV }; delete e.ELECTRON_RUN_AS_NODE; for (const k of Object.keys(e)) if (/^(VSCODE_|ELECTRON_)/.test(k)) delete e[k]; return e; }
 
 // Clean output: colour codes out, progress bars (\r rewrites) reduced to their last state, repeated lines folded,
 // and long output cut to its start and its end (errors are usually at the end, the command echo at the start).
 export function cleanOutput(s, max = 4000) {
   let t = String(s || "").replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07]*(\x07|\x1b\\)|\x1b[@-Z\\-_]/g, "");
+  t = redact(t); // 2026-11-15c: keys printed by a command never reach the model, the panel or the run history
   t = t.split("\n").map((l) => { const parts = l.split("\r").filter((p) => p.trim()); return parts.length ? parts[parts.length - 1] : ""; }).join("\n");
   const lines = t.split("\n"), out = []; let prev = null, rep = 0;
   for (const l of lines) { if (l === prev && l.trim()) { rep++; continue; } if (rep) out.push(`  (the line above repeated ${rep} more times)`); rep = 0; out.push(l); prev = l; }

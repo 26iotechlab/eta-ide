@@ -1,5 +1,5 @@
 // Private safety snapshots and Undo for agent runs (moved out of server.mjs so they can be tested on their own).
-import * as fs from "fs"; import * as fsp from "fs/promises"; import * as path from "path"; import { exec } from "child_process"; import * as os from "os";
+import * as fs from "fs"; import * as fsp from "fs/promises"; import * as path from "path"; import { exec, execFile } from "child_process"; import * as os from "os";
 const GIT = `git -c user.name="Eta IDE" -c user.email="eta@26io.local"`;
 function sh(cwd, cmd, timeout = 90000, extraEnv = null) {
   return new Promise((res) => exec(cmd, { cwd, timeout, maxBuffer: 4 << 20, windowsHide: true, ...(extraEnv ? { env: { ...process.env, ...extraEnv } } : {}) },
@@ -63,6 +63,40 @@ export async function revertRun(r) {
   }
   await sh(ws, `${S} reset -q`); // the private store's own index back to its last snapshot
   return { ok: a.ok, detail: (a.ok ? `restored the files, removed ${removed} new file(s)` : a.out).slice(0, 200) };
+}
+
+// A file's content as it was at a run's snapshot (job B2: undo one block). Returns the text, null when the file did
+// not exist at the snapshot, undefined when not supported (not an "eta:" snapshot, a binary file, not UTF-8 text).
+// With { raw: true } it returns the bytes (Buffer) and does no text checks. Uses git without a shell (no quoting risk).
+export async function readSnapshotFile(r, rel, opts = {}) {
+  const ws = r?.workspace, snap = String(r?.snapshot || "");
+  if (!ws || !/^eta:[0-9a-f]{40}$/.test(snap)) return undefined;
+  const p = String(rel || "").replace(/\\/g, "/").replace(/^\.\//, "");
+  if (!p || p.includes("\0")) return null;
+  const args = SG(ws).match(/(?:[^\s"]+|"[^"]*")+/g).slice(1).map((a) => a.replace(/"/g, "")); // the same options as SG(ws)
+  const run = (extra, enc) => new Promise((res) => gitRaw(ws, [...args, ...extra], enc, res));
+  const spec = `${snap.slice(4)}:${p}`;
+  if (!(await run(["cat-file", "-e", spec], "utf8")).ok) return null; // not in the snapshot
+  const got = await run(["cat-file", "blob", spec], "buffer");
+  if (!got.ok) throw new Error("could not read the snapshot: " + String(got.err).slice(0, 200));
+  const buf = got.out;
+  if (opts.raw) return buf;
+  const hasNul = (b) => b.subarray(0, 8000).includes(0);
+  if (hasNul(buf)) return undefined;
+  try { const fd = fs.openSync(path.join(ws, p), "r"); try { const b = Buffer.alloc(8000); const n = fs.readSync(fd, b, 0, 8000, 0); if (hasNul(b.subarray(0, n))) return undefined; } finally { fs.closeSync(fd); } } catch {}
+  const text = buf.toString("utf8");
+  return Buffer.from(text, "utf8").equals(buf) ? text : undefined; // bytes that are not UTF-8 would be damaged on write-back
+}
+// The tree (the exact set of file contents) of an "eta:" snapshot, or null. Two snapshots with the same tree hold the same files (B3).
+export async function snapshotTree(ws, snap) {
+  if (!ws || !/^eta:[0-9a-f]{40}$/.test(String(snap || ""))) return null;
+  const args = SG(ws).match(/(?:[^\s"]+|"[^"]*")+/g).slice(1).map((a) => a.replace(/"/g, ""));
+  const r = await new Promise((res) => gitRaw(ws, [...args, "rev-parse", snap.slice(4) + ":"], "utf8", res)); // "<commit>:" = the commit's root tree (no shell, so no ^ problem on Windows)
+  const t = r.ok ? String(r.out).trim() : "";
+  return /^[0-9a-f]{40}$/.test(t) ? t : null;
+}
+function gitRaw(cwd, args, encoding, done) {
+  execFile("git", args, { cwd, encoding, maxBuffer: 64 << 20, timeout: 60000, windowsHide: true }, (err, so, se) => done({ ok: !err, out: so, err: err ? (se || err.message) : "" }));
 }
 
 // ---- parallel agents: git worktree isolation ----

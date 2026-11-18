@@ -13,7 +13,8 @@ import * as path from "path";
 import { randomBytes } from "crypto";
 import AdmZip from "adm-zip";
 import { loadSkills, loadAgents, parseFmLines } from "./agent.mjs";
-import { loadMcpConfig, loadMcpFile, globalMcpPath, testMcpServer } from "./mcp.mjs";
+import { loadMcpConfig, loadMcpFile, loadProjectMcp, globalMcpPath, testMcpServer } from "./mcp.mjs";
+import { isTrusted } from "./pathguard.mjs";
 
 const NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const SCRIPT_EXT = new Set([".sh", ".ps1", ".bat", ".cmd", ".py", ".js", ".mjs", ".cjs", ".ts", ".exe", ".dll", ".rb", ".pl", ".php"]);
@@ -278,6 +279,8 @@ export async function commitImport({ id, ws, scope, picks }) {
 // ---------- test one tool: connect once, list what it offers ----------
 export async function testItem({ ws, name }) {
   const cfg = (await loadMcpConfig(ws || ""))[name]; if (!cfg) throw new Error("Tool not found.");
+  // Folder trust: "Test" starts the program, so a tool that comes from the project file needs a trusted folder.
+  if (ws && Object.prototype.hasOwnProperty.call(await loadProjectMcp(ws), name) && !isTrusted(ws)) throw new Error("This tool comes from the folder itself. Trust this folder first, then test it.");
   return await testMcpServer(name, cfg, ws);
 }
 

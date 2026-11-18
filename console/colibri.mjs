@@ -11,8 +11,18 @@ import { fileURLToPath } from "url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // Python 3 is needed only for Colibri's launcher/gateway script (the engines are plain programs).
+// UPGRADE E1 (2026-11-13): the installer now ships its own small Python (console/python/python.exe, the Windows
+// "embeddable" package), so a PC without Python no longer fails on the first start. Order: ETA_PYTHON (a choice made by
+// the user) -> the bundled Python -> any Python already on the PC. Pure function, tested in test-python.mjs.
+export function pythonCandidates(env = process.env, bundled = path.join(HERE, "python", "python.exe"), exists = fs.existsSync) {
+  if (env.ETA_PYTHON) return [[env.ETA_PYTHON, []]];
+  const list = [];
+  if (exists(bundled)) list.push([bundled, []]);
+  list.push(["python", []], ["python3", []], ["py", ["-3"]]);
+  return list;
+}
 export function findPython() {
-  const tries = process.env.ETA_PYTHON ? [[process.env.ETA_PYTHON, []]] : [["python", []], ["python3", []], ["py", ["-3"]]];
+  const tries = pythonCandidates();
   for (const [cmd, pre] of tries) {
     try { const r = spawnSync(cmd, [...pre, "-I", "-c", "import sys; print(sys.version_info[0])"], { encoding: "utf8", timeout: 8000, windowsHide: true }); if (r.status === 0 && String(r.stdout).trim() === "3") return { cmd, pre }; } catch {}
   }
@@ -28,9 +38,19 @@ export function findColibri() {
 
 // Memory plan from the PC. ram = what Colibri may use; cap = expert slots per layer (256 experts per layer in the Qwen 35B model).
 // Measured on 8.3 GB: cap 32 and 48 gave 2.4 words/s, cap 64 ran out of memory and fell to 0.6. So stay low on small PCs.
+// A built-in graphics chip (AMD Radeon 780M, "Radeon(TM) Graphics", Vega 8) reports memory that Windows set aside from normal
+// memory. It is NOT a graphics card: count it as 0 so the screen never promises card speed. The first start still tests the chip.
+export function isIntegratedGpu(gpu) {
+  const n = String(gpu?.name || "");
+  if (gpu?.vendor === "amd") return /radeon\(tm\)\s*graphics|radeon graphics|vega\s*\d+|\b\d{3}m\b/i.test(n) && !/\brx\b|radeon pro/i.test(n);
+  return false;
+}
+export function cardVramGB(hw) {
+  return hw?.gpu && ["nvidia", "amd"].includes(hw.gpu.vendor) && !isIntegratedGpu(hw.gpu) ? (hw.gpu.vramGB || 0) : 0;
+}
 export function colibriPlan(hw) {
   const ramGB = hw?.ramGB || 8;
-  const vram = hw?.gpu && ["nvidia", "amd"].includes(hw.gpu.vendor) ? (hw.gpu.vramGB || 0) : 0;
+  const vram = cardVramGB(hw);
   // kvSlots: each conversation (hashed from its system + first user message) keeps its own saved prompt state, so the agent's
   //   growing work loop re-reads only the new part. With one slot, the agent's other calls overwrote it (measured: no reuse).
   //   This model can only resume a prompt that CONTINUES the saved one (875 words: 32 s fresh, 4-5 s continued).
@@ -53,6 +73,40 @@ export function colibriImport(c, gguf, outDir) {
   const r = spawnSync(c.python.cmd, [...c.python.pre, "-I", "coli", "import", "--out", outDir, "--mode", "link", gguf], { cwd: c.dir, encoding: "utf8", timeout: 180000, windowsHide: true });
   if (r.status !== 0 || !fs.existsSync(path.join(outDir, "config.json"))) throw new Error("Eta Engine could not read this model file. " + String(r.stderr || r.stdout || "").trim().slice(-200));
   return { ok: true };
+}
+
+// PACKED FORMAT (measured 2026-11-14, reports\sim\SUMMARY-20261114.md): "coli import --mode copy" writes one standalone file
+// with every expert in one aligned piece (one read each). Card off, 8 GB profile, 2 of 2 alternating rounds: prompt reading
+// ~30% faster (35 s -> 24 s), answers ~30% faster (1.6 -> 2.1 words/s). The packed folder runs without the original GGUF.
+// Runs WITHOUT blocking (a 15 GB copy took 0.8 min here; slower disks take longer), into "<out>.tmp", renamed only when
+// complete, so a crash never leaves a half-written model. Resolves { ok, error }. Never throws.
+export const PACKED_MARK = "eta-packed.json";
+export function packedReady(outDir) {
+  try { const mk = JSON.parse(fs.readFileSync(path.join(outDir, PACKED_MARK), "utf8")); return !!(mk && mk.bytes > 0 && fs.statSync(path.join(outDir, mk.file)).size === mk.bytes && fs.existsSync(path.join(outDir, "config.json"))); } catch { return false; }
+}
+export function colibriPack(c, gguf, outDir, timeoutMs = 3600000) {
+  return new Promise((resolve) => {
+    const tmp = outDir + ".tmp";
+    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {}
+    let err = "", done = false;
+    const finish = (r) => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
+    const p = spawn(c.python.cmd, [...c.python.pre, "-I", "coli", "import", "--out", tmp, "--mode", "copy", gguf], { cwd: c.dir, windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
+    p.stderr?.on("data", (d) => { err = (err + String(d)).slice(-400); });
+    const timer = setTimeout(() => { try { spawnSync("taskkill", ["/F", "/T", "/PID", String(p.pid)], { stdio: "ignore", windowsHide: true }); } catch {} finish({ ok: false, error: "packing took too long" }); }, timeoutMs);
+    p.on("error", (e) => finish({ ok: false, error: String(e.message || e) }));
+    p.on("exit", (code) => {
+      if (done) return;
+      try {
+        const g = JSON.parse(fs.readFileSync(path.join(tmp, "gguf.json"), "utf8"));
+        const file = g.gguf; const bytes = fs.statSync(path.join(tmp, file)).size;
+        if (code !== 0 || g.mode !== "copy" || !(bytes > 0) || !fs.existsSync(path.join(tmp, "config.json"))) throw new Error("import exit " + code + " " + err.trim().slice(-200));
+        fs.writeFileSync(path.join(tmp, PACKED_MARK), JSON.stringify({ file, bytes, source: path.basename(gguf), at: new Date().toISOString() }));
+        try { fs.rmSync(outDir, { recursive: true, force: true }); } catch {}
+        fs.renameSync(tmp, outDir);
+        finish({ ok: true });
+      } catch (e) { try { fs.rmSync(tmp, { recursive: true, force: true }); } catch {} finish({ ok: false, error: String(e.message || e) }); }
+    });
+  });
 }
 
 export function colibriArgs(modelDir, port, plan) {

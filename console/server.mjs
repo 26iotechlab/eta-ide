@@ -12,18 +12,31 @@ import * as os from "os";
 import { exec, spawn as cpSpawn } from "child_process";
 import { queryWorkspace } from "./localsearch.mjs";
 import { configureSearch, parseProviderLines, searchStatus, searchWeb, proxyLabel } from "./websearch.mjs";
-import { Agent, Eta, chatStream, repoMap, provider, setProvider, detectProviderKind, listProviderModels, indexWorkspace, search as ripgrepSearch, retrieveForQuestion, completeCode, loadRules, loadWorkflows, loadAgents, editCode, ensureFimModel, fimReady, FIM_MODEL, detectHardware, ollamaUp, ollamaBase } from "./agent.mjs";
+import { Agent, Eta, chatStream, repoMap, provider, setProvider, detectProviderKind, listProviderModels, indexWorkspace, search as ripgrepSearch, retrieveForQuestion, completeCode, loadRules, loadWorkflows, loadAgents, editCode, ensureFimModel, fimReady, FIM_MODEL, detectHardware, ollamaUp, ollamaBase, cloudModelActive } from "./agent.mjs";
 import { stopMoeTurbo, moeBackendRunning, findLlamaServer, recommendHF, startMainModelHF } from "./moe.mjs";
 import { loadMcpConfig } from "./mcp.mjs";
 import { listCatalog, addCatalogTool } from "./catalog.mjs";
 import { Host, recommendFor, fitFor } from "./host.mjs";
 import { listCustom, createItem, deleteItem, previewImport, commitImport, readItem, writeItem, testItem } from "./customize.mjs";
 import { lspAvailable, diagnostics as lspDiagnostics } from "./lsp.mjs";
-import { loadSkills, fileDeps, depGraph, ruleSkills } from "./agent.mjs";
-import { onMeter, resetMeter } from "./meter.mjs";
+import { loadSkills, fileDeps, depGraph, ruleSkills, isLocalBase, detectTestCmd } from "./agent.mjs";
+import { continueRequest } from "./runstate.mjs";
+import { onMeter, resetMeter, meterHold, meterRelease, meterContext } from "./meter.mjs";
+import { autoApproveDefault } from "./defaults.mjs";
+const AUTO_APPROVE_DEFAULT = autoApproveDefault(); // false unless ETA_AUTO_APPROVE=1 (safe default, see defaults.mjs)
 import { gitSnapshot, revertRun, excludeEta, withGitLock, makeWorktree, mergeWorktree, discardWorktree } from "./snapshot.mjs";
+import { proofCard } from "./proofcard.mjs";
 import { CHAT_RULES } from "./chatrules.mjs";
+import { runChanges, revertHunks } from "./review.mjs";
+import { expandMentions, searchFiles } from "./mentions.mjs";
+import { isSecretFile } from "./cloudguard.mjs";
+import { setEditorState, editorBlock } from "./editorstate.mjs";
+import { takeCheckpoint, listCheckpoints, rewindRun } from "./checkpoints.mjs";
+import { beforeEdit, afterEdit, keepEdit, undoEdit } from "./editundo.mjs";
 import { encryptSecret, decryptSecret } from "./secrets.mjs";
+import { guardPath, isTrusted, setTrusted, trustState, projectCommands, TRUST_NOTICE, TRUST_CHANGED_NOTICE, directRunRefusal } from "./pathguard.mjs";
+import { atomicWrite } from "./atomicwrite.mjs";
+import { redact } from "./redact.mjs";
 import { fileURLToPath as _toPath } from "url";
 const ENGINE_DIR_SELF = path.dirname(_toPath(import.meta.url));
 
@@ -68,10 +81,12 @@ async function saveConfig(patch) {
   let c = {}; try { c = JSON.parse(await fsp.readFile(CFG_PATH, "utf8")); } catch {}
   c = { ...c, ...patch };
   await fsp.mkdir(path.dirname(CFG_PATH), { recursive: true });
-  await fsp.writeFile(CFG_PATH, JSON.stringify(c, null, 2), "utf8");
+  await atomicWrite(CFG_PATH, JSON.stringify(c, null, 2), "utf8"); // 2026-11-15c: a crash mid-save never leaves a broken config
   return c;
 }
 async function loadConfigRaw() { try { return JSON.parse(await fsp.readFile(CFG_PATH, "utf8")); } catch { return {}; } }
+// Cloud-first: is there a local model to go back to? (the one saved before the cloud switch, or a downloaded hosted model)
+async function canGoLocal() { const ll = (await loadConfigRaw()).lastLocal; return !!(ll && ll.base && ll.model && isLocalBase(ll.base)) || !!host.s.modelId; }
 await loadConfig();
 
 // ---- model host: downloads and runs the local model (host.mjs) ----
@@ -162,12 +177,12 @@ async function saveState() {
   const data = {
     nextId, currentWs, chatMsgs: chatMsgs.slice(-25), history: history.slice(-40), archive: archive.map((a) => ({ ...a, chatMsgs: a.chatMsgs.slice(-25), history: a.history.slice(-60) })),
     runs: [...runs.values()].filter((r) => keepRunIds.has(r.id)).map((r) => ({
-      id: r.id, task: r.task, workspace: r.workspace, status: r.status, started: r.started,
-      files: [...r.files], warnings: r.warnings || [], snapshot: r.snapshot || null, events: r.events.slice(-400),
+      id: r.id, task: r.task, workspace: r.workspace, status: r.status, outcome: r.outcome || "", verdict: r.verdict || "", started: r.started,
+      files: [...r.files], warnings: r.warnings || [], snapshot: r.snapshot || null, checkpoints: r.checkpoints || [], bases: r.bases || [], cloudBase: r.cloudBase || null, events: r.events.slice(-400),
     })),
   };
   await fsp.mkdir(path.dirname(STATE_PATH), { recursive: true });
-  await fsp.writeFile(STATE_PATH, JSON.stringify(data), "utf8");
+  await atomicWrite(STATE_PATH, JSON.stringify(data), "utf8"); // 2026-11-15c: a crash mid-save never loses all chats and runs
 }
 async function loadState() {
   try {
@@ -201,7 +216,7 @@ async function loadState() {
 }
 await loadState(); // must run AFTER the declarations above (TDZ)
 
-const meta = (r) => ({ id: r.id, task: r.task, workspace: r.workspace, status: r.status, started: r.started, files: [...r.files], warnings: r.warnings || [], isolated: !!r.isolated, branch: r.branch || null, merged: !!r.merged, discarded: !!r.discarded, conflicted: !!r.conflicted, canMerge: !!(r.isolated && r.branch && !r.merged && !r.discarded && !r.conflicted && ["done", "error"].includes(r.status)) });
+const meta = (r) => ({ id: r.id, task: r.task, workspace: r.workspace, status: r.status, outcome: r.outcome || "", verdict: r.verdict || "", started: r.started, files: [...r.files], warnings: r.warnings || [], isolated: !!r.isolated, branch: r.branch || null, merged: !!r.merged, discarded: !!r.discarded, conflicted: !!r.conflicted, canMerge: !!(r.isolated && r.branch && !r.merged && !r.discarded && !r.conflicted && ["done", "error"].includes(r.status)) });
 
 // Compose a walkthrough artifact (Antigravity-style proof-of-work) from a run's
 // events: plan, steps, files, gates, browser checks + screenshots, verdict.
@@ -222,7 +237,7 @@ function walkthrough(r) {
   return {
     id: r.id, task: r.task, workspace: r.workspace, status: r.status, started: r.started,
     files: [...r.files], snapshot: r.snapshot || null, plan, steps, gates, browser, reviews, answer,
-    warnings: done?.warnings || [], toolCount: steps.length, durationMs,
+    warnings: done?.warnings || [], verdict: done?.verdict || "", toolCount: steps.length, durationMs,
   };
 }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -302,8 +317,10 @@ let _meterLast = 0, _meterT = null;
 onMeter((s) => { const send = () => { _meterLast = Date.now(); _meterT = null; broadcast({ type: "meter", ...s }); };
   if (!s.busy || Date.now() - _meterLast > 500) { clearTimeout(_meterT); send(); } else if (!_meterT) _meterT = setTimeout(send, 500); });
 function emit(run, e) {
+  if (e.type === "error" && typeof e.text === "string") e = { ...e, text: redact(e.text) }; // 2026-11-15c: an error text never carries a key
   const evt = { ...e, runId: run.id, ts: Date.now() };
   if (e.type === "done" && run.snapshot) evt.canRevert = true;
+  if (e.type === "done") evt.settles = true; // ACP bridge (acp.mjs): a "runSettled" event follows once the after-run checks end
   // live code-generation deltas are broadcast-only (ephemeral): storing every
   // keystroke-sized chunk would bloat run history; the final diff/filewrite
   // event carries the durable record.
@@ -323,7 +340,11 @@ function emit(run, e) {
   // meta()/`GET /api/run?id=N`, including this project's own standing unattended-run polling
   // method in TASKS.md, saw only `status`/`files` and had no top-level way to tell an honestly
   // "not fully complete" run apart from a genuinely successful one without replaying every event.
-  if (e.type === "done") { run.status = "done"; run.warnings = Array.isArray(e.warnings) ? e.warnings : []; }
+  // STRONG1 RED GATE (2026-11-16): a run whose measured final state is red ("NOT DONE: tests still failing", "no file was changed",
+  // "tests could not run") must NOT report `done` (live, first public benchmark: 4 runs said `done` with their own tests failing).
+  // It gets the existing failed-run status "error", which the UI, the merge buttons, ACP and the benchmark harness already understand;
+  // `outcome` and `verdict` say why. A `done` event without these fields (older agent) keeps the old behaviour.
+  if (e.type === "done") { run.status = e.status === "not-done" ? "error" : "done"; run.outcome = e.outcome || (e.status === "not-done" ? "not-done" : "done"); run.verdict = typeof e.verdict === "string" ? e.verdict : ""; run.warnings = Array.isArray(e.warnings) ? e.warnings : []; }
   if (e.type === "error") run.status = "error";
   if (e.type === "cancelled") run.status = "cancelled";
   broadcast(evt);
@@ -352,7 +373,14 @@ async function generatePRText(diff) {
 // .eta/brain when parallel agents each write memory.
 // Detect a runnable baseline check (project tests). Recorded before the run;
 // if it PASSED before and FAILS after, the agent introduced a regression.
+// STRONG2 A2 (2026-11-16): ONE detector. This copy used to be a smaller twin of agent.mjs detectTestCmd and missed Go, Rust, Java,
+// C#, C++, node --test, Ruby, PHP, Swift and Makefile projects (their live runs started with no test command at all). It now calls
+// the shared detectTestCmd; the old code below is only the fallback when that call throws.
 async function detectBaseline(ws) {
+  try { const shared = await detectTestCmd(ws); if (shared) return shared; return null; } catch {}
+  return detectBaselineOld(ws);
+}
+async function detectBaselineOld(ws) {
   try { const pkg = JSON.parse(await fsp.readFile(path.join(ws, "package.json"), "utf8")); const t = pkg.scripts?.test; if (t && !/no test specified/i.test(t)) return "npm test --silent"; } catch {}
   try {
     const files = await fsp.readdir(ws);
@@ -375,17 +403,27 @@ async function detectBaseline(ws) {
   return null;
 }
 
-function spawn({ task, workspace, autoApprove, model, memoryModel, maxSteps, isolate, planApproval, forceSkill, persona }) {
+// D5: tell the meter how big the model's window is, so the panel can show how full it is. Cloud models: unknown (0).
+function setMeterWindow(numCtx) { meterContext(provider.kind === "openai" ? (numCtx || 0) : provider.kind === "ollama" ? (numCtx || 8192) : 0); }
+
+function spawn({ task, display, workspace, autoApprove, model, memoryModel, maxSteps, isolate, planApproval, forceSkill, persona, deadlineMs }) {
+  // 2026-11-15c: two direct runs on the same folder would overwrite each other's files and snapshots.
+  // Refuse a new direct run then (HTTP 409); also cap how many runs work at once. Isolated runs use their own worktree.
+  if (!isolate) { const no = directRunRefusal(runs.values(), workspace, _hw?.maxParallel || 3); if (no) throw Object.assign(new Error(no), { httpStatus: 409 }); }
   const id = String(nextId++); resetMeter();
-  const run = { id, task, workspace, status: "running", events: [], files: new Set(), warnings: [], started: Date.now(), isolated: !!isolate };
+  const run = { id, task: display ?? task, workspace, status: "running", events: [], files: new Set(), warnings: [], started: Date.now(), isolated: !!isolate };
   runs.set(id, run);
   history.push({ kind: "run", runId: id, ts: Date.now() });
   broadcast({ type: "run", run: meta(run) });
-  const approve = (title, detail) => new Promise((res) => { const aid = id + ":" + Math.random().toString(36).slice(2); pending.set(aid, res); emit(run, { type: "approval", id: aid, title, detail }); });
+  // While a question to the user is open the token meter must say "waiting for you", not "Done" (see meter.mjs, holds).
+  const held = (res) => { meterHold(true); let once = false; return (v) => { if (!once) { once = true; meterHold(false); } res(v); }; };
+  // The time the user takes to answer is NOT the agent's working time: it is added back to the run clock (see overBudget), so a
+  // question nobody saw for 9 minutes (seen live 2026-11-15) no longer eats the whole time budget.
+  const approve = (title, detail) => new Promise((res) => { const t0 = Date.now(); const aid = id + ":" + Math.random().toString(36).slice(2); const h = held(res); pending.set(aid, (v) => { try { const w = Date.now() - t0, ag = run.agent; if (ag) { if (ag.startTime) ag.startTime += w; if (ag._repairUntil) ag._repairUntil += w; } } catch {} h(v); }); emit(run, { type: "approval", id: aid, title, detail }); });
   // Topic 3 — PLAN REVIEW: emit the plan and await the user's decision (approve / edit / reject).
-  const planReview = (planText) => new Promise((res) => { const aid = id + ":plan"; pending.set(aid, res); emit(run, { type: "plan_review", id: aid, plan: planText }); });
+  const planReview = (planText) => new Promise((res) => { const aid = id + ":plan"; pending.set(aid, held(res)); emit(run, { type: "plan_review", id: aid, plan: planText }); });
   // ask_user tool channel — same pending/promise pattern, but for an in-loop clarifying question.
-  const askUser = (question, options) => new Promise((res) => { const aid = id + ":ask:" + Math.random().toString(36).slice(2); pending.set(aid, res); emit(run, { type: "ask_user", id: aid, question, options }); });
+  const askUser = (question, options) => new Promise((res) => { const aid = id + ":ask:" + Math.random().toString(36).slice(2); pending.set(aid, held(res)); emit(run, { type: "ask_user", id: aid, question, options }); });
   (async () => {
     // isolated (parallel) runs work in their own git worktree+branch
     let root = workspace;
@@ -396,6 +434,7 @@ function spawn({ task, workspace, autoApprove, model, memoryModel, maxSteps, iso
       else emit(run, { type: "log", text: "git worktree unavailable — running directly" });
     }
     run.root = root;
+    run.bases = [provider.base]; run.cloudBase = provider.cloudFallback?.base || null; // for the proof card: which model servers this run could use
     // safety snapshot (revert point) — only for direct runs; isolated ones use the branch
     if (!run.wtPath) { run.snapshot = await gitSnapshot(root); if (run.snapshot) emit(run, { type: "snapshot", hash: run.snapshot.slice(0, 10) }); }
     // behavioral baseline (regression reference) — handed to the engine so its
@@ -407,19 +446,26 @@ function spawn({ task, workspace, autoApprove, model, memoryModel, maxSteps, iso
     // large on a strong GPU) unless the user pinned ETA_NUM_CTX.
     const prof = await hwProfile();
     const numCtx = process.env.ETA_NUM_CTX ? Number(process.env.ETA_NUM_CTX) : (prof?.numCtx || undefined);
-    const agent = new Agent(root, { model: model || provider.model, memoryModel: memoryModel || model || provider.model, maxSteps: maxSteps || 24, autoApprove: autoApprove ?? true, testCmd: bcmd, testBaselineOk: base ? base.ok : null, numCtx, planApproval: planApproval ?? planApprovalMode, forceSkill, persona, enginePort: PORT });
+    setMeterWindow(numCtx);
+    const agent = new Agent(root, { model: model || provider.model, memoryModel: memoryModel || model || provider.model, maxSteps: maxSteps || 24, autoApprove: autoApprove ?? AUTO_APPROVE_DEFAULT, testCmd: bcmd, testBaselineOk: base ? base.ok : null, numCtx, planApproval: planApproval ?? planApprovalMode, forceSkill, persona, enginePort: PORT, trustRoot: workspace, deadlineAt: Number(deadlineMs) > 0 ? run.started + Number(deadlineMs) : 0 }); // SPEED1 #6: the caller's outer limit (e.g. the harness deadline), measured from when the run was asked for
     agent.planReview = planReview; // Topic 3: plan gate channel
     agent.askUser = askUser; // ask_user tool channel
+    agent.checkpoint = (info) => withGitLock(root, () => takeCheckpoint(run, info)); // B3: a step to go back to after each file write/edit
+    // PHASE 3: Keep / Undo for each file edit, during the run (editundo.mjs). "before" returns a token, "after" shows the buttons.
+    agent.onFileEdit = async (phase, x, tool) => { if (phase === "before") return beforeEdit(run, x); const ev = await afterEdit(run, x, tool); if (ev) emit(run, ev); return null; };
     run.agent = agent;
     // the agent team
-    try { await agent.run(task, (e) => emit(run, e), approve); }
+    // RESUME (2026-11-14): typing "/continue" alone picks up the last unfinished run in this folder (.eta/run.json).
+    const resuming = /^\/continue\s*$/i.test(String(task || "").trim());
+    try { await (resuming ? agent.resumeRun((e) => emit(run, e), approve) : agent.run(task, (e) => emit(run, e), approve)); }
     catch (err) { emit(run, { type: "error", text: String(err?.message || err) }); }
-    finally { try { agent.mcp?.stop(); } catch {} } // release external MCP servers
+    finally { try { agent.mcp?.stop(); } catch {} meterRelease(); if (agent._helperBase && !run.bases.includes(agent._helperBase)) run.bases.push(agent._helperBase); } // release external MCP servers; no question can still be open
     // regression gate
     if (bcmd && base?.ok) {
       const after = await sh(root, bcmd, 120000);
       if (!after.ok) emit(run, { type: "regression", text: `'${bcmd}' PASSED before this run but FAILS now — the agent likely broke existing behaviour. Consider Revert.`, detail: after.out.slice(-800) });
     }
+    broadcast({ type: "runSettled", id }); // ACP bridge: nothing more comes for this run. No runId field on purpose: the UI ignores it.
   })();
   return id;
 }
@@ -451,7 +497,7 @@ async function tree(root, rel = "", depth = 0) {
   }
   return items;
 }
-function safe(root, rel) { const r = path.resolve(root, rel || "."); if (!r.startsWith(path.resolve(root))) throw new Error("path escapes workspace"); return r; }
+function safe(root, rel) { return guardPath(root, rel); } // pathguard.mjs: sibling-prefix, "..", other drives and links that point outside are all refused
 
 // ---- terminal (tracks cwd, basic cd support) ----
 function runCmd(cwd, command) {
@@ -507,8 +553,9 @@ async function wsMap(ws) {
   mapCache.set(ws, { map, ts: Date.now() });
   return map;
 }
-async function doChat(message, ctxFile, ws, image) {
+async function doChat(message, ctxFile, ws, image, attached = "", cidIn) {
   resetMeter();
+  try { const prof = await hwProfile(); setMeterWindow(process.env.ETA_NUM_CTX ? Number(process.env.ETA_NUM_CTX) : prof?.numCtx); } catch {}
   if (chatMsgs.length > 24) chatMsgs = [chatMsgs[0], ...chatMsgs.slice(-18)];
   const map = await wsMap(ws);
   // project rules (.eta/rules | AGENTS.md | .cursorrules) steer chat too — the
@@ -532,13 +579,15 @@ async function doChat(message, ctxFile, ws, image) {
   // RETRIEVAL: grep the repo for the question's real symbols so the answer is grounded in actual
   // code, not the truncated static map (which hallucinated on modules it couldn't fit).
   let retrieved = ""; try { if (ws) retrieved = await retrieveForQuestion(ws, message); } catch {}
+  // Cloud model + the open file is a secret file (.env, id_rsa ...): send its name only, never its text (2026-11-15j).
+  if (ctxFile && cloudModelActive() && isSecretFile(ctxFile.path)) ctxFile = { path: ctxFile.path, content: "(not sent: this looks like a secret file and a cloud model is active)" };
   const userText = (map ? `[project map]\n${map}\n` : "") + (retrieved ? retrieved + "\n" : "") + imgReport +
-    (ctxFile ? `[open file: ${ctxFile.path}]\n\`\`\`\n${(ctxFile.content || "").slice(0, 6000)}\n\`\`\`\n\n` : "") + message;
+    (ctxFile ? `[open file: ${ctxFile.path}]\n\`\`\`\n${(ctxFile.content || "").slice(0, 6000)}\n\`\`\`\n\n` : "") + message + attached;
   const myMsgs = chatMsgs, myHist = history, gen = chatGen; // stay bound to THIS chat even if the user switches meanwhile
   myMsgs.push({ role: "user", content: userText });
   myHist.push({ kind: "user", text: message + (image ? " (image attached)" : ""), ts: Date.now() });
   broadcast({ type: "chat", role: "user", text: message });
-  const cid = Math.random().toString(36).slice(2);
+  const cid = cidIn || Math.random().toString(36).slice(2);
   broadcast({ type: "chatStart", cid });
   let full = "";
   try { await chatStream(myMsgs, (d) => { full += d; if (gen === chatGen) broadcast({ type: "chatDelta", cid, delta: d }); }); }
@@ -577,6 +626,13 @@ function json(res, o, code = 200) { res.writeHead(code, { "content-type": "appli
 //  - a browser Origin, when sent, must be our own page (blocks cross-site requests; the panel iframe is same-origin);
 //  - Sec-Fetch-Site cross-site/same-site is refused too (covers GETs and other localhost ports).
 // The IDE extension and tests call from Node: no Origin header, allowed.
+// PAGES WE DID NOT WRITE (security 2026-11-15): an artifact is HTML from the project folder, served from the same address as
+// the engine API. "sandbox" WITHOUT allow-same-origin gives that page an origin of its own ("null"), so it cannot call /api or
+// /events as our page (accessDenied refuses Origin "null"); connect-src 'none' also stops fetch/XHR/WebSocket from it.
+const UNTRUSTED_PAGE_HEADERS = {
+  "content-security-policy": "sandbox allow-scripts; default-src 'self' data: blob: 'unsafe-inline'; connect-src 'none'",
+  "x-content-type-options": "nosniff",
+};
 const OWN_ORIGINS = () => new Set([`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`]);
 function accessDenied(req) {
   const host = String(req.headers.host || "").toLowerCase();
@@ -607,7 +663,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && u.pathname.startsWith("/vendor/")) {
       const rel = u.pathname.slice(8).replace(/\.\./g, "");
-      const fp = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([a-z]:)/i, "$1")), "vendor", rel);
+      const fp = path.join(path.dirname(_toPath(import.meta.url)), "vendor", rel);
       try { const data = await fsp.readFile(fp);
         const ct = fp.endsWith(".js") ? "text/javascript" : fp.endsWith(".css") ? "text/css" : "application/octet-stream";
         res.writeHead(200, { "content-type": ct, "cache-control": "max-age=3600" }); return res.end(data);
@@ -659,12 +715,44 @@ const server = http.createServer(async (req, res) => {
       const configured = !!(provider.base && provider.model);
       let ok = configured ? await new Eta(u.searchParams.get("model") || provider.model).health() : false;
       if (configured && host.isHostedProvider(provider)) ok = ["ready", "sleeping", "loading", "restarting", "downloading"].includes(host.s.status); // llama-server names its model by file path, so the name check cannot be trusted
-      return json(res, { eta: ok, configured, hostStatus: host.isHostedProvider(provider) ? host.s.status : "", kind: provider.kind, model: provider.model, base: provider.base, local: /localhost|127\.0\.0\.1/.test(provider.base) });
+      return json(res, { eta: ok, configured, hostStatus: host.isHostedProvider(provider) ? host.s.status : "", kind: provider.kind, model: provider.model, base: provider.base, local: /localhost|127\.0\.0\.1/.test(provider.base), cloud: configured && !isLocalBase(provider.base), canGoLocal: await canGoLocal() });
     }
-    if (req.method === "GET" && u.pathname === "/api/config") { return json(res, { provider: { base: provider.base, model: provider.model, key: provider.key, kind: provider.kind, completionModel: provider.completionModel } }); }
+    // Cloud-first (2026-11-15h): go back to the local model that was active before the cloud model.
+    if (req.method === "POST" && u.pathname === "/api/provider/back-to-local") {
+      const ll = (await loadConfigRaw()).lastLocal;
+      let restored;
+      if (ll && ll.base && ll.model && isLocalBase(ll.base)) restored = { base: ll.base, model: ll.model, kind: ll.kind, completionModel: ll.completionModel || "", noGrammar: !!ll.noGrammar, key: ll.keyEnc ? await decryptSecret(ll.keyEnc) : "" };
+      else if (host.s.modelId) restored = { base: "http://127.0.0.1:8722", kind: "openai", model: host.apiModel || host.s.label, noGrammar: host.engine === "colibri", key: "" };
+      else return json(res, { ok: false, error: "No local model is set up yet. Open Models and choose one." }, 400);
+      setProvider(restored);
+      await saveConfig({ provider: { base: provider.base, model: provider.model, kind: provider.kind, keyEnc: await encryptSecret(provider.key || ""), completionModel: provider.completionModel, noGrammar: provider.noGrammar } });
+      if (host.isHostedProvider(provider) && host.s.modelId) host.restart().catch(() => {}); // loads in the background; the status line shows it
+      return json(res, { ok: true, provider: { base: provider.base, model: provider.model, kind: provider.kind } });
+    }
+    // SECURITY 2026-11-15: the API key is NEVER sent back to a page. The page only learns "a key is saved" (+ its last 4 characters).
+    if (req.method === "GET" && u.pathname === "/api/config") {
+      const k = String(provider.key || "");
+      return json(res, { provider: { base: provider.base, model: provider.model, keySet: !!k, keyHint: k.length >= 12 ? k.slice(-4) : "", kind: provider.kind, completionModel: provider.completionModel }, cloud: !!(provider.base && provider.model) && !isLocalBase(provider.base), canGoLocal: await canGoLocal() });
+    }
     if (req.method === "POST" && u.pathname === "/api/config") {
       const b = await body(req);
       if (b.provider) {
+        // The settings form cannot read the key back, so an EMPTY key field means "keep the saved key" - but only for the
+        // SAME address (a saved key must never travel to a different server). clearKey: true removes it on purpose.
+        const bp = { ...b.provider }; const newBase = bp.base ? String(bp.base).trim().replace(/\/+$/, "") : provider.base;
+        if (bp.clearKey === true) bp.key = "";
+        else if (typeof bp.key !== "string" || !bp.key.trim()) { if (newBase === provider.base) delete bp.key; else bp.key = ""; }
+        const privacyOk = b.privacyOk === true || bp.privacyOk === true;
+        delete bp.clearKey; delete bp.privacyOk; b.provider = bp;
+        // Cloud-first (2026-11-15h): an address outside this PC needs the "my code leaves this PC" tick once per address.
+        // Before the first switch away from a local model, remember it so "Back to the local model" can restore it.
+        if (newBase && !isLocalBase(newBase)) {
+          const raw = await loadConfigRaw(); const okBases = Array.isArray(raw.privacyOkBases) ? raw.privacyOkBases : [];
+          if (!privacyOk && !okBases.includes(newBase)) return json(res, { ok: false, needPrivacyOk: true, error: "Please tick the box first: your code and files will leave this PC and go to the provider." }, 400);
+          const patch = { privacyOkBases: okBases.includes(newBase) ? okBases : [...okBases, newBase].slice(-20) };
+          if (provider.base && provider.model && isLocalBase(provider.base)) patch.lastLocal = { base: provider.base, model: provider.model, kind: provider.kind, completionModel: provider.completionModel || "", noGrammar: !!provider.noGrammar, keyEnc: await encryptSecret(provider.key || "") };
+          await saveConfig(patch);
+        }
         setProvider(b.provider);
         if (host.s.status !== "none" && !host.isHostedProvider(provider)) host.stop();
         // BYOM: auto-detect which protocol this endpoint speaks unless told.
@@ -679,14 +767,23 @@ const server = http.createServer(async (req, res) => {
     // lists the models it offers so the user can pick one.
     if (req.method === "POST" && u.pathname === "/api/provider/test") {
       const b = await body(req);
-      const out = await listProviderModels(b.base || "", b.key || "", b.kind || null);
+      // empty key field + the saved address = probe with the saved key (the form cannot read it back); any other address gets no saved key
+      const sameBase = String(b.base || "").trim().replace(/\/+$/, "") === provider.base;
+      const out = await listProviderModels(b.base || "", b.key || (sameBase ? provider.key : "") || "", b.kind || null);
       return json(res, { reachable: !!out.kind, ...out });
     }
-    if (req.method === "GET" && u.pathname === "/api/run") { const r = runs.get(u.searchParams.get("id")); return json(res, r ? { status: r.status, files: [...r.files], warnings: r.warnings || [], events: r.events } : { error: "not found" }, r ? 200 : 404); }
+    if (req.method === "GET" && u.pathname === "/api/run") { const r = runs.get(u.searchParams.get("id")); return json(res, r ? { status: r.status, outcome: r.outcome || "", verdict: r.verdict || "", files: [...r.files], warnings: r.warnings || [], events: r.events } : { error: "not found" }, r ? 200 : 404); }
     if (req.method === "GET" && u.pathname === "/api/walkthrough") {
       const r = runs.get(u.searchParams.get("id")); if (!r) return json(res, { error: "not found" }, 404);
-      if (u.searchParams.get("format") === "html") { res.writeHead(200, { "content-type": "text/html" }); return res.end(walkthroughHtml(walkthrough(r))); }
+      if (u.searchParams.get("format") === "html") { res.writeHead(200, { "content-type": "text/html", "content-security-policy": "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'", "x-content-type-options": "nosniff" }); return res.end(walkthroughHtml(walkthrough(r))); } // our own page built from run text: no script may ever run in it (not sandboxed: its screenshots load from /api/shot)
       return json(res, walkthrough(r));
+    }
+    // D4: the extension tells us what the editor shows (open file, cursor, errors); kept in memory only, newest wins
+    if (req.method === "POST" && u.pathname === "/api/editor-state") { const b = await body(req); setEditorState(b); return json(res, { ok: true }); }
+    // @-mention list: files of the open folder that match the typed text (mentions.mjs)
+    if (req.method === "GET" && u.pathname === "/api/mention-files") {
+      const ws = u.searchParams.get("ws"); if (!ws) return json(res, { files: [] });
+      return json(res, { files: await searchFiles(ws, u.searchParams.get("q") || "", 12).catch(() => []) });
     }
     if (req.method === "GET" && u.pathname === "/api/tree") {
       const ws = u.searchParams.get("ws"); if (!ws) return json(res, { error: "ws required" }, 400);
@@ -812,6 +909,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && u.pathname === "/api/complete") {
       const b = await body(req);
       if (!provider.model) return json(res, { completion: "", error: "no model configured" });
+      // D1: while an agent run is working, Tab completion would share the model and the graphics card and slow the run down: skip it
+      if (!b.force && [...runs.values()].some((r) => r.status === "running")) return json(res, { completion: "", busy: true });
       try { return json(res, { completion: await completeCode(b.prefix || "", b.suffix || "", b.lang || "") }); }
       catch (e) { return json(res, { completion: "", error: String(e?.message || e).slice(0, 120) }); }
     }
@@ -828,7 +927,7 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req);
       if (!provider.model) return json(res, { error: "no model configured" }, 400);
       if (typeof b.code !== "string" || !b.instruction) return json(res, { error: "code and instruction required" }, 400);
-      try { return json(res, { edit: await editCode(b.code, b.instruction, b.lang || "", b.path || "") }); }
+      try { return json(res, { edit: await editCode(b.code, b.instruction, b.lang || "", b.path || "", { before: b.before, after: b.after }) }); }
       catch (e) { return json(res, { error: String(e?.message || e).slice(0, 160) }, 500); }
     }
     // ---- adaptive hardware → the one right local model (first-run onboarding) ----
@@ -836,11 +935,11 @@ const server = http.createServer(async (req, res) => {
     // qualifying dGPU, else the 16B floor) straight from HF_MODELS, no Ollama tag involved.
     if (req.method === "GET" && u.pathname === "/api/hardware") {
       const hw = await detectHardware();
-      const base = recommendHF(hw), pick = recommendFor(hw);
+      const base = recommendHF(hw), pick = recommendFor(hw, undefined, !!host._exe(hw));
       // null = no model on the list is good enough AND fast enough here. Say so; do not hand out a weak model.
-      if (!pick) return json(res, { hardware: hw, recommendation: null, tooSmall: true, llamaServerBundled: !!findLlamaServer(hw) });
+      if (!pick) return json(res, { hardware: hw, recommendation: null, tooSmall: true, llamaServerBundled: !!host._exe(hw) });
       const recommendation ={ ...base, model: pick.label, tier: pick.id, sizeGB: pick.sizeGB, mode: "standard", reason: "The biggest model that runs fast on this PC. " + fitFor(hw, pick).text + "." };
-      return json(res, { hardware: hw, recommendation, llamaServerBundled: !!findLlamaServer(hw) });
+      return json(res, { hardware: hw, recommendation, llamaServerBundled: !!host._exe(hw) });
     }
     // MoE Turbo backend status (is the bundled llama-server serving the model?)
     if (u.pathname.startsWith("/api/host")) {
@@ -874,7 +973,7 @@ const server = http.createServer(async (req, res) => {
       // reacts to modelReady. No Ollama pull, no GGUF lookup in Ollama's blob store — the
       // bundled llama-server resolves the download/cache itself (see moe.mjs startMainModelHF).
       (async () => {
-        const hw = await detectHardware(); const pick = recommendFor(hw);
+        const hw = await detectHardware(); const pick = recommendFor(hw, undefined, !!host._exe(hw));
         if (!pick) { broadcast({ type: "modelPull", status: "error: this PC is too small for a good model", model: "" }); return; }
         const rec = { model: pick.label };
         try { await useHosted(pick.id); } catch (e) { if (!e.paused) broadcast({ type: "modelPull", status: "error: " + String(e?.message || e).slice(0, 160), model: rec.model }); }
@@ -933,7 +1032,7 @@ const server = http.createServer(async (req, res) => {
       let content; try { content = await fsp.readFile(safe(ws, entry.path), "utf8"); }
       catch { res.writeHead(404, { "content-type": "text/plain" }); return res.end("the published source file is missing"); }
       const html = /\.md$/i.test(entry.path) ? mdArtifactPage(content, entry.title) : content;
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", ...UNTRUSTED_PAGE_HEADERS });
       return res.end(html);
     }
     if (req.method === "POST" && u.pathname === "/api/chat") { const b = await body(req); if (!b.message) return json(res, { error: "message required" }, 400); doChat(b.message, b.ctxFile, b.ws, b.image); return json(res, { ok: true }); }
@@ -969,6 +1068,24 @@ const server = http.createServer(async (req, res) => {
       await fsp.writeFile(path.join(b.ws, ".eta", "rules.md"), b.text, "utf8");
       return json(res, { ok: true });
     }
+    // Folder trust (pathguard.mjs): project hooks and project tool servers run only in a folder the user trusted.
+    // The list is in the user's home folder. These routes sit behind accessDenied like every /api route.
+    if (req.method === "GET" && u.pathname === "/api/trust") {
+      const ws = u.searchParams.get("ws") || "";
+      const pc = projectCommands(ws);
+      const state = ws ? trustState(ws) : "none", trusted = state === "trusted";
+      // changed: trusted before, but the files are different now (or the entry is from before content checks: "old")
+      return json(res, { ws, trusted, state, changed: state === "changed" || state === "old", hooks: pc.hooks, servers: pc.servers, details: pc.details, fingerprint: pc.fp,
+        needsDecision: !!ws && (pc.hooks > 0 || pc.servers > 0) && !trusted, notice: state === "changed" || state === "old" ? TRUST_CHANGED_NOTICE : TRUST_NOTICE });
+    }
+    if (req.method === "POST" && u.pathname === "/api/trust") {
+      const b = await body(req);
+      if (!b.ws || typeof b.ws !== "string" || typeof b.trusted !== "boolean") return json(res, { error: "ws and trusted (true or false) required" }, 400);
+      if (!path.isAbsolute(b.ws)) return json(res, { error: "ws must be a full folder path" }, 400);
+      if (b.fingerprint !== undefined && typeof b.fingerprint !== "string") return json(res, { error: "fingerprint must be text" }, 400);
+      try { setTrusted(b.ws, b.trusted, b.fingerprint); } catch (e) { return json(res, { error: String(e?.message || e), stale: e?.code === "TRUST_STALE" }, e?.code === "TRUST_STALE" ? 409 : 500); }
+      return json(res, { ok: true, ws: b.ws, trusted: isTrusted(b.ws) });
+    }
     if (req.method === "GET" && u.pathname === "/api/mcp") {
       const ws = u.searchParams.get("ws"); if (!ws) return json(res, { servers: [] });
       const cfg = await loadMcpConfig(ws);
@@ -991,6 +1108,13 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST" && u.pathname === "/api/message") {
       const b = await body(req); if (!b.message) return json(res, { error: "message required" }, 400);
+      // D3: files named with @path in the message are read here and appended to the task or question (the typed text stays as it is)
+      let att = ""; try { att = b.ws ? (await expandMentions(String(b.message), String(b.ws), undefined, { cloud: cloudModelActive() })).block : ""; } catch {}
+      try { if (b.ws) att += editorBlock(String(b.ws)); } catch {} // D4: open file, cursor and editor errors, as short background
+      // RESUME (2026-11-14): "/continue" alone picks up the last unfinished run of this folder.
+      const cont = continueRequest(b.ws, b.message);
+      if (cont.kind === "nothing") return json(res, { kind: "chat", hint: "nothing_to_continue" });
+      if (cont.kind === "continue") return json(res, { kind: "task", runId: spawn({ task: "/continue", display: `Continue: ${cont.state.task.slice(0, 80)} (${cont.left} step(s) left)`, workspace: b.ws, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT }), resumed: true });
       // Workflow invocation: "/name [extra]" runs a saved .eta/workflows/<name>.md
       // recipe as an agent task, with any trailing text appended as user context.
       const wf = b.ws && b.message.match(/^\/([a-z0-9][\w-]*)\s*([\s\S]*)$/i);
@@ -998,7 +1122,7 @@ const server = http.createServer(async (req, res) => {
         const found = (await loadWorkflows(b.ws)).find((w) => w.name.toLowerCase() === wf[1].toLowerCase());
         if (found) {
           const task = found.body + (wf[2].trim() ? `\n\nAdditional context from the user: ${wf[2].trim()}` : "");
-          return json(res, { kind: "task", runId: spawn({ task, workspace: b.ws, autoApprove: b.autoApprove ?? true }), workflow: found.name });
+          return json(res, { kind: "task", runId: spawn({ task: task + att, display: task, workspace: b.ws, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT }), workflow: found.name });
         }
         // Not a workflow name — try a skill instead: "/skill-name <task>" FORCES that skill into
         // the run regardless of keyword match (skills are normally 100% automatic/invisible).
@@ -1006,7 +1130,7 @@ const server = http.createServer(async (req, res) => {
         if (skillHit) {
           const task = wf[2].trim();
           if (!task) return json(res, { kind: "chat", hint: "skill_needs_task", skill: skillHit.name }); // named a skill but no task yet
-          return json(res, { kind: "task", runId: spawn({ task, workspace: b.ws, autoApprove: b.autoApprove ?? true, forceSkill: skillHit.name }), skill: skillHit.name });
+          return json(res, { kind: "task", runId: spawn({ task: task + att, display: task, workspace: b.ws, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT, forceSkill: skillHit.name }), skill: skillHit.name });
         }
       }
       // "@agent-name <task>": run the task as that agent (its instructions become the role).
@@ -1017,14 +1141,15 @@ const server = http.createServer(async (req, res) => {
           const task = at[2].trim();
           if (!task) return json(res, { kind: "chat", hint: "agent_needs_task", agent: ag.name });
           if (!b.ws) return json(res, { kind: "chat", hint: "open_folder" });
-          return json(res, { kind: "task", runId: spawn({ task, workspace: b.ws, autoApprove: b.autoApprove ?? true, persona: { name: ag.name, body: ag.body } }), agent: ag.name });
+          return json(res, { kind: "task", runId: spawn({ task: task + att, display: task, workspace: b.ws, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT, persona: { name: ag.name, body: ag.body } }), agent: ag.name });
         }
       }
       const kind = b.image ? "chat" : classify(b.message, b.ws); // image questions always go to chat
-      if (kind === "task") { const runId = spawn({ task: b.message, workspace: b.ws, autoApprove: b.autoApprove ?? true }); return json(res, { kind: "task", runId }); }
-      doChat(b.message, b.ctxFile, b.ws, b.image);
+      if (kind === "task") { const runId = spawn({ task: b.message + att, display: b.message, workspace: b.ws, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT, deadlineMs: b.deadlineMs }); return json(res, { kind: "task", runId }); }
+      const cid = Math.random().toString(36).slice(2); // returned so the ACP bridge can follow exactly this reply
+      doChat(b.message, b.ctxFile, b.ws, b.image, att, cid);
       const wantsBuild = !b.ws && /\b(build|create|make|add|fix|implement|write)\b/i.test(b.message);
-      return json(res, { kind: "chat", hint: wantsBuild ? "open_folder" : undefined });
+      return json(res, { kind: "chat", cid, hint: wantsBuild ? "open_folder" : undefined });
     }
     if (req.method === "POST" && u.pathname === "/api/spawn") { const b = await body(req); if (!b.task || !b.workspace) return json(res, { error: "task and workspace required" }, 400); return json(res, { runId: spawn(b) }); }
     if (req.method === "POST" && u.pathname === "/api/spawn-many") {
@@ -1032,7 +1157,7 @@ const server = http.createServer(async (req, res) => {
       if (!b.workspace || !Array.isArray(b.tasks) || !b.tasks.length) return json(res, { error: "workspace and tasks[] required" }, 400);
       // hardware-scaled parallelism: don't run more agents at once than the machine can sustain.
       const cap = Math.max(1, (await hwProfile())?.maxParallel || 3);
-      const ids = b.tasks.filter((t) => t && t.trim()).slice(0, cap).map((task) => spawn({ task: task.trim(), workspace: b.workspace, autoApprove: b.autoApprove ?? true, isolate: true }));
+      const ids = b.tasks.filter((t) => t && t.trim()).slice(0, cap).map((task) => spawn({ task: task.trim(), workspace: b.workspace, autoApprove: b.autoApprove ?? AUTO_APPROVE_DEFAULT, isolate: true }));
       return json(res, { runIds: ids });
     }
     if (req.method === "POST" && u.pathname === "/api/merge") {
@@ -1053,6 +1178,8 @@ const server = http.createServer(async (req, res) => {
       scheduleSave();
       return json(res, { ok: true });
     }
+    // Is this approval still waiting for the user? The panel asks after a reload, so an open question is shown again.
+    if (req.method === "GET" && u.pathname === "/api/approval-open") return json(res, { open: pending.has(u.searchParams.get("id") || "") });
     if (req.method === "POST" && u.pathname === "/api/approve") { const b = await body(req); pending.get(b.id)?.(!!b.ok); pending.delete(b.id); return json(res, { ok: true }); }
     // Topic 3 — the user's plan decision (approve / edit / reject) resolves the plan gate.
     if (req.method === "POST" && u.pathname === "/api/plan-decision") { const b = await body(req); pending.get(b.id)?.({ action: b.action || "approve", note: b.note || "" }); pending.delete(b.id); return json(res, { ok: true }); }
@@ -1071,8 +1198,40 @@ const server = http.createServer(async (req, res) => {
       broadcast({ type: "reverted", runId: r.id, ok: a.ok });
       return json(res, a);
     }
+    // B3: go back to any step of a finished run (see checkpoints.mjs)
+    if (req.method === "GET" && u.pathname === "/api/run-steps") { const l = listCheckpoints(runs.get(u.searchParams.get("runId") || "")); return json(res, l, l.ok ? 200 : 404); }
+    if (req.method === "POST" && u.pathname === "/api/rewind") {
+      const b = await body(req); const r = runs.get(String(b.runId || ""));
+      const a = r ? await withGitLock(r.workspace, () => rewindRun(r, b.step)) : { ok: false, error: "No such run." };
+      if (a.ok) { broadcast({ type: "rewound", runId: r.id, step: a.to }); scheduleSave(); }
+      return json(res, a, a.ok ? 200 : 400);
+    }
+    // PHASE 3: Keep / Undo ONE file edit, also during the run (editundo.mjs). Behind accessDenied like every /api route;
+    // the folder must be the run's folder; the file path is checked again with guardPath (never ~/.eta or the trust list).
+    if (req.method === "POST" && (u.pathname === "/api/edit/undo" || u.pathname === "/api/edit/keep")) {
+      const b = await body(req); const r = runs.get(String(b.runId || ""));
+      const a = u.pathname === "/api/edit/undo" ? await undoEdit(r, b.editId, b.ws) : keepEdit(r, b.editId, b.ws);
+      if (a.ok) { emit(r, { type: "edit_status", editId: a.editId, file: a.file, status: a.status, how: a.how || "" }); scheduleSave(); }
+      const { status, ...out } = a; return json(res, out, a.ok ? 200 : status || 400);
+    }
+    // B2: undo ONE changed block of a finished run (see review.mjs)
+    if (req.method === "GET" && u.pathname === "/api/proof") {
+      const r = runs.get(u.searchParams.get("runId") || "");
+      if (!r) return json(res, { ok: false, error: "No such run." }, 404);
+      return json(res, { ok: true, ...(await proofCard(r)) });
+    }
+    if (req.method === "GET" && u.pathname === "/api/run-changes") {
+      const c = await runChanges(runs.get(u.searchParams.get("runId") || ""));
+      return json(res, c, c.ok ? 200 : 400);
+    }
+    if (req.method === "POST" && u.pathname === "/api/revert-hunks") {
+      const b = await body(req); const r = runs.get(String(b.runId || ""));
+      const a = await revertHunks(r, b.file, b.hunkIds);
+      if (a.ok) broadcast({ type: "hunks-reverted", runId: r.id, file: a.file, remaining: a.remaining });
+      return json(res, a, a.ok ? 200 : a.conflict ? 409 : 400);
+    }
     res.writeHead(404); res.end("not found");
-  } catch (e) { try { json(res, { error: String(e?.message || e) }, 500); } catch {} }
+  } catch (e) { try { json(res, { error: String(e?.message || e), ...(e?.httpStatus === 409 ? { busy: true } : {}) }, e?.httpStatus || 500); } catch {} }
 });
 // Kill the bundled llama-server child when the IDE exits (no orphaned model in RAM).
 for (const sig of ["SIGINT", "SIGTERM", "exit"]) process.on(sig, () => { try { stopMoeTurbo(); host.shutdown(); } catch {} if (sig !== "exit") process.exit(0); });

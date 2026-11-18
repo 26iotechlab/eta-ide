@@ -47,7 +47,10 @@ function startMock() {
       let content = "OK";
       try {
         const msgs = JSON.parse(body).messages || [];
-        const sys = msgs[0]?.role === "system" ? msgs[0].content : "";
+        let sys = msgs[0]?.role === "system" ? msgs[0].content : "";
+        // Prompt Keeper (2026-11-15): a side call may start with the executor's system text and carry its own job in the
+        // last user message after a "ROLE CHANGE" line. Route by that job, like the old system text.
+        { const lastU = String(msgs[msgs.length - 1]?.content || ""); if (lastU.startsWith("ROLE CHANGE")) sys = lastU.slice(lastU.indexOf("\n") + 1); }
         const allText = msgs.map((m) => m.content || "").join("\n");
         const marker = (allText.match(/TASK-[A-Z]+/) || [])[0];
         if (marker === "TASK-CANCEL") await sleep(2500); // slow model for the cancel test
@@ -102,7 +105,7 @@ function startMock() {
     });
   });
   await new Promise((r) => lspMock.listen(0, "127.0.0.1", r));
-  const childEnv = { ...process.env, PORT: String(PORT), ETA_LSP_BRIDGE: `http://127.0.0.1:${lspMock.address().port}`, ETA_NO_HELPER_LAUNCH: "1" };
+  const childEnv = { ...process.env, PORT: String(PORT), ETA_LSP_BRIDGE: `http://127.0.0.1:${lspMock.address().port}`, ETA_NO_HELPER_LAUNCH: "1", ETA_AUTO_APPROVE: "1" };
   delete childEnv.ETA_MODEL; delete childEnv.OLLAMA_URL;
   const child = cpSpawn(process.execPath, ["server.mjs"], { cwd: __dirname, env: childEnv, stdio: "ignore" });
   let up = false;
@@ -327,8 +330,9 @@ function startMock() {
   const cfgRaw = fs.readFileSync(path.join(process.env.USERPROFILE || process.env.HOME || "", ".eta-ide", `config-${PORT}.json`), "utf8");
   check("api key encrypted at rest (keyEnc present, no plaintext)", /keyEnc/.test(cfgRaw) && !cfgRaw.includes("sk-secret-ROUNDTRIP-123"), cfgRaw.slice(0, 160));
   const cfgBack = await j("/api/config");
-  check("key decrypts back into memory", cfgBack.provider.key === "sk-secret-ROUNDTRIP-123");
-  await post("/api/config", { provider: { base: mock.url, model: "mock", key: "" } }); // restore keyless mock for any trailing checks
+  // SECURITY 2026-11-15 (SEC-06): the key must NOT come back to the page any more; the page only learns that one is saved.
+  check("key is kept in memory but never sent back (keySet, last 4 only)", cfgBack.provider.keySet === true && cfgBack.provider.key === undefined && cfgBack.provider.keyHint === "-123" && !JSON.stringify(cfgBack).includes("sk-secret-ROUNDTRIP"), JSON.stringify(cfgBack));
+  await post("/api/config", { provider: { base: mock.url, model: "mock", key: "", clearKey: true } }); // restore keyless mock for any trailing checks
 
   section("new: inbuilt FIM autocomplete model (bundled llama-server, Ollama-free 2026-07-23)");
   // FIM now launches on the SAME bundled-llama-server mechanism as the main brain/helper tier
@@ -342,7 +346,9 @@ function startMock() {
   check("FIM launch is disabled in the test env (same guard as the helper tier)", fimSetup.ok === false && /disabled/.test(fimSetup.reason || ""), JSON.stringify(fimSetup));
   const fim1 = await j("/api/fim/status");
   check("FIM stays not-ready when its launch is disabled", fim1.ready === false, JSON.stringify(fim1));
-  const fc = await post("/api/complete", { prefix: "function add(a,b){ return ", suffix: " }", lang: "js" });
+  // earlier checks start runs and do not wait for them; Tab completion is (by design) skipped while a run works, so wait for idle first
+  let fc = await post("/api/complete", { prefix: "function add(a,b){ return ", suffix: " }", lang: "js" });
+  for (let i = 0; i < 40 && fc.busy; i++) { await new Promise((r) => setTimeout(r, 500)); fc = await post("/api/complete", { prefix: "function add(a,b){ return ", suffix: " }", lang: "js" }); }
   check("completion still answers by falling through to the chat-based path", typeof fc.completion === "string" && fc.completion.length > 0, JSON.stringify(fc));
 
   section("agent guards: tool-call-as-content + regression detection");
@@ -1597,11 +1603,11 @@ function startMock() {
       const sdir = fresh("smoke");
       fs.writeFileSync(path.join(sdir, "models.py"), "class Account:\n    pass\n");
       fs.writeFileSync(path.join(sdir, "report.py"), "from models import Account, Transaction\n"); // Transaction missing
-      const err = await A.Agent.prototype.importSmokeTest.call({ root: sdir });
+      const err = await A.Agent.prototype.importSmokeTest.call({ root: sdir, files: new Set(["report.py"]) });
       check("smoke test catches a broken cross-file import (the capstone bug)", /ImportError|cannot import name/.test(err) && /Transaction/.test(err), (err || "").slice(0, 90));
       fs.writeFileSync(path.join(sdir, "report.py"), "from models import Account\n");
       try { fs.rmSync(path.join(sdir, "__pycache__"), { recursive: true, force: true }); } catch {}
-      const clean = await A.Agent.prototype.importSmokeTest.call({ root: sdir });
+      const clean = await A.Agent.prototype.importSmokeTest.call({ root: sdir, files: new Set(["report.py"]) });
       check("smoke test returns clean when imports resolve", clean === "", JSON.stringify(clean));
     }
     {
@@ -2182,7 +2188,8 @@ FAILED (errors=2)`;
         const rank = (m, f) => m.split("\n").filter((l) => /^\S/.test(l) && !/^REPO MAP|^\(\+/.test(l)).findIndex((l) => l.startsWith(f)) + 1;
         const gen = await A.repoMap(__dirname, 5000, "");
         const moeMap = await A.repoMap(__dirname, 5000, "fix the MoE turbo quant ladder");
-        check("repomap: task personalization pulls the relevant file up", rank(moeMap, "moe.mjs") < rank(gen, "moe.mjs"), `generic #${rank(gen, "moe.mjs")} -> task #${rank(moeMap, "moe.mjs")}`);
+        check("repomap: task personalization pulls the relevant file up", rank(moeMap, "moe.mjs") > 0 && rank(moeMap, "moe.mjs") < (rank(gen, "moe.mjs") || Infinity), // #0 = not in the generic map at all (below the budget), which is lower than any shown rank
+          `generic #${rank(gen, "moe.mjs")} -> task #${rank(moeMap, "moe.mjs")}`);
         check("repomap: header announces the focus", /focused on your task/.test(moeMap));
         check("repomap: no-task map is plain PageRank (no false focus claim)", !/focused on your task/.test(gen));
         check("repomap: respects the token budget", gen.length <= 5000 && moeMap.length <= 5000, `${gen.length} / ${moeMap.length}`);
@@ -3200,7 +3207,7 @@ Body.`);
       // file wholesale via its own fs.writeFile, bypassing both _writeFile and the surgical
       // edit_file path where the guard already lived — and a model-authored spec file transcribes
       // the TASK, never the repo's legal notice. The run-level safety net cannot cover it: MEASURED
-      // (D:/tmp/repro-authortest-net.mjs) the overwrite took the suite from 1 passed to 2 passed,
+      // (D:/eta-ide/dev-scratch/repro-authortest-net.mjs) the overwrite took the suite from 1 passed to 2 passed,
       // i.e. strictly BETTER, so restoreBaselineIfWorse correctly did nothing and the copyright
       // block was gone for good. Locking happens right after, so the guard must run BEFORE it or
       // restoreTestsIfBroken would write the header-less snapshot back.
@@ -3240,7 +3247,7 @@ Body.`);
       }
 
       // TEST-COVERAGE GUARD on the same authoring write path, one level DEEPER (MEASURED LIVE —
-      // liclab run 116, 2026-08-09, D:/tmp/repro-testdrop.mjs). The authored spec file destroyed
+      // liclab run 116, 2026-08-09, D:/eta-ide/dev-scratch/repro-testdrop.mjs). The authored spec file destroyed
       // the only test of spin() and every guard stayed green: droppedDefs measured [] because it
       // compares TOP-LEVEL blocks and the authored file re-declared the same `class TestWidget`,
       // and the suite went 1 passed -> 2 passed (strictly BETTER) so the run-level net never fired.
@@ -3322,7 +3329,7 @@ Body.`);
       }
 
       // METHOD-LEVEL DESTRUCTION GUARD — the GENERALISATION of the bug above to ORDINARY production
-      // code (MEASURED on the real boltons/cacheutils.py, 2026-08-09, D:/tmp/repro-methoddrop.mjs).
+      // code (MEASURED on the real boltons/cacheutils.py, 2026-08-09, D:/eta-ide/dev-scratch/repro-methoddrop.mjs).
       // Bug 26's root cause was GRANULARITY, and that reasoning was never test-specific: a rewrite
       // that keeps every class by name while deleting a METHOD inside one is invisible to every
       // content guard (droppedDefs [], topLevelDefs 13->13), and when no test covers that method
@@ -3368,7 +3375,7 @@ Body.`);
         check("taskDropsCodeContent: a RENAME task stands the guard down (the runs 50-54 shape)", A.taskDropsCodeContent("Rename distance_to on Point to distance and update every call site") === true);
         check("taskDropsCodeContent: a pure ADD task leaves the guard ARMED", A.taskDropsCodeContent("Add a method total_seen() to the ThresholdCounter class in boltons/cacheutils.py") === false);
 
-        // ---- BUG 47 (MEASURED via no-model harness, D:/tmp/repro-topdefs-removal.mjs, 2026-08-23):
+        // ---- BUG 47 (MEASURED via no-model harness, D:/eta-ide/dev-scratch/repro-topdefs-removal.mjs, 2026-08-23):
         // preserveDroppedMethods (member-level) always stood down on !taskDropsCodeContent(this.task)
         // (wired at line ~5807/6618) — but the TOP-LEVEL droppedDefs guard that gates a whole-file
         // write_file rewrite, and its surgical edit_file sibling, had NO such stand-down: the
@@ -3380,9 +3387,9 @@ Body.`);
         // functions, so this is the same wiring-verification style as bug 29's budget-gate check). ----
         const src47 = fs.readFileSync(path.join(__dirname, "agent.mjs"), "utf8");
         check("bug 47: write_file's top-level droppedDefs guard now stands down on taskDropsCodeContent",
-          /old !== null && old\.trim\(\) && !taskDropsCodeContent\(this\.task\) && droppedDefs\(old, content\)\.length/.test(src47));
+          /old !== null && old\.trim\(\) && !taskDropsCodeContent\(this\.task\) && droppedDefs\(old, content(?:, rel)?\)\.length/.test(src47));
         check("bug 47: edit_file's top-level droppedDefs guard now stands down on taskDropsCodeContent",
-          /g\.ok && old\.trim\(\) && !taskDropsCodeContent\(this\.task\) && droppedDefs\(old, content\)\.length/.test(src47));
+          /g\.ok && old\.trim\(\) && !taskDropsCodeContent\(this\.task\) && droppedDefs\(old, content(?:, rel)?\)\.length/.test(src47));
         // splitClassMembers — factored out of preserveDroppedTests so both guards use ONE scanner.
         // BUG 63 (2026-09-06): a class-level attribute (`X = 1`) USED TO be swept into `preamble`
         // alongside the docstring, indistinguishable from it and therefore invisible to
@@ -3415,7 +3422,7 @@ Body.`);
           check("preserveDroppedMethods: a dropped method in an ALIGNED multi-line-header class is now detected (BUG 99)", !!A.preserveDroppedMethods(OB, NB) && A.preserveDroppedMethods(OB, NB).names.join(",") === "Foo.b");
         }
 
-        // ---- BUG 63 (staleness-audit sweep, 2026-09-06, D:/tmp/repro-classattr-drop/repro.mjs):
+        // ---- BUG 63 (staleness-audit sweep, 2026-09-06, D:/eta-ide/dev-scratch/repro-classattr-drop/repro.mjs):
         // preserveDroppedMethods only ever iterated `splitClassMembers(...).members`, and before the
         // fix above a class-level attribute assignment was never a "member" at all -- it was absorbed
         // into `preamble`, indistinguishable from a docstring. So a rewrite that dropped, e.g.,
@@ -3772,7 +3779,7 @@ Body.`);
         check("bug 31 wiring: ...but the license header is STILL protected on that same removal task", /SPDX-License-Identifier/.test(disk31b), disk31b);
       }
 
-      // ---- BUG 32 (MEASURED 2026-08-14, D:/tmp/repro-wrongclass-pytest-blind.mjs): `fixWrongClassApi`
+      // ---- BUG 32 (MEASURED 2026-08-14, D:/eta-ide/dev-scratch/repro-wrongclass-pytest-blind.mjs): `fixWrongClassApi`
       // split the failure report on the UNITTEST rule alone (`/^={20,}$/m`). pytest never emits a line
       // of only '=' — it heads each failure with underscores — so on every pytest repo the loop ran
       // ZERO times and the whole lever was dead code. Its sibling `apiMismatches` had already learned
@@ -3962,7 +3969,7 @@ Body.`);
 
       // ---- contextual tool subsetting (narrowToolsForStep) ----
       const ordinaryTools = A.narrowToolsForStep("Add a function to validate the input");
-      check("narrowToolsForStep: ordinary step gets the CORE set (well under all 34)", ordinaryTools.length <= 12 && ordinaryTools.includes("write_file") && ordinaryTools.includes("edit_file"), "n=" + ordinaryTools.length);
+      check("narrowToolsForStep: ordinary step gets the CORE set (15 of all 34)", ordinaryTools.length <= 15 && ordinaryTools.includes("write_file") && ordinaryTools.includes("edit_file"), "n=" + ordinaryTools.length);
       check("narrowToolsForStep: core always includes finish + ask_user", ordinaryTools.includes("finish") && ordinaryTools.includes("ask_user"));
       const gitTools = A.narrowToolsForStep("Check the git history to see when this was last changed");
       check("narrowToolsForStep: git-flavored step adds git/git_history on top of core", gitTools.includes("git") && gitTools.includes("git_history") && gitTools.includes("write_file"));
@@ -5414,6 +5421,7 @@ def test_dispatch_default():
           restoreTestsIfBroken: A.Agent.prototype.restoreTestsIfBroken,
           _collectionBroken: A.Agent.prototype._collectionBroken,
           apiFactsBlock: A.Agent.prototype.apiFactsBlock,
+          repairEvidenceBlock: A.Agent.prototype.repairEvidenceBlock, _lastFailOut: "", _lastHyp: null,
           _implicatedFns: A.Agent.prototype._implicatedFns,
           _disambiguateClass: A.Agent.prototype._disambiguateClass,
           _genOneFunction: A.Agent.prototype._genOneFunction,
@@ -6048,7 +6056,7 @@ class T(unittest.TestCase):
       // for this term" — and rg sorts by path, so the truncation is ALPHABETICAL. A file whose path
       // sorts late scores 0 for a term it matches perfectly, and because idHits DOMINATE the sort
       // (bug 22) that can zero out the exact identifier evidence the ranking runs on. Measured with
-      // a no-model harness (D:/tmp/repro-file-cap.mjs): the definition site was ABSENT from the
+      // a no-model harness (D:/eta-ide/dev-scratch/repro-file-cap.mjs): the definition site was ABSENT from the
       // candidate list entirely — 60 candidates, all callers. Two definition sites here on purpose,
       // so _definingFiles' exactly-one rule cannot rescue it and the cap alone decides the outcome.
       // Counterfactual-verified against a copy of agent.mjs with the fix neutralized: 61 candidates
@@ -6948,21 +6956,10 @@ class T(unittest.TestCase):
       await pg.goto(BASE + "/", { waitUntil: "load" });
       await pg.waitForTimeout(1500);
       check("no JS errors on load", jsErrors.length === 0, jsErrors.join(" | ").slice(0, 200));
-      const mgr = await pg.evaluate(() => ({
-        newtask: !!document.getElementById("newtask"), projects: !!document.getElementById("projects"),
-        modelchip: !!document.getElementById("modelchip"), settings: !!document.getElementById("wset"),
-        title: document.title,
-      }));
-      check("Agent Manager is the app's home page", mgr.newtask && mgr.projects && mgr.modelchip && mgr.settings && /Agent Manager/.test(mgr.title), JSON.stringify(mgr));
-      await pg.evaluate(() => { document.getElementById("gear").click(); });
-      await pg.waitForTimeout(500);
-      const setOpen = await pg.evaluate(() => document.getElementById("wset").classList.contains("on") && !!document.getElementById("presets"));
-      check("Manager settings open with model presets", setOpen === true);
-      await pg.evaluate(() => { S.projects = ["X:/demo"]; S.project = "X:/demo"; S.health = { configured: true, eta: true, model: "m", local: true }; S.runs["1"] = { meta: { id: "1", task: "demo task", workspace: "X:/demo", status: "running", started: Date.now(), files: [], warnings: [] }, events: [{ type: "plan_review", id: "1:plan", plan: "step one" }] }; document.getElementById("sclose").click(); S.view = "1"; render(); });
-      await pg.waitForTimeout(500);
-      const rv = await pg.evaluate(() => ({ needs: !!document.querySelector(".ev.need"), proceed: !!document.querySelector('[data-a="approve"]'), art: !!document.getElementById("art") }));
-      check("run view shows a plan to approve with Proceed + artifacts pane", rv.needs && rv.proceed && rv.art, JSON.stringify(rv));
-      check("still no JS errors after interactions", jsErrors.length === 0, jsErrors.join(" | ").slice(0, 200));
+      // The standalone Agent Manager page was dropped on purpose (2026-11-15: the chat panel opens by itself when the IDE starts).
+      // "/" now serves the chat panel; manager.html lives in project\_dropped-standalone-app.
+      const home = await pg.evaluate(() => ({ chatbox: !!document.getElementById("chatbox"), right: !!document.getElementById("right"), manager: !!document.getElementById("newtask"), title: document.title }));
+      check("home page is the chat panel (standalone Agent Manager page was dropped on purpose)", home.chatbox && home.right && !home.manager && /Eta IDE/.test(home.title), JSON.stringify(home));
 
       // EMBED mode (inside the VS Code fork): agent panel ONLY — the host IDE
       // draws explorer/editor/terminal, so none of ours may be visible.

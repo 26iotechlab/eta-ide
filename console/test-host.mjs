@@ -47,6 +47,13 @@ ok(fitFor({ ramGB: 8 }, { sizeGB: 48 }).level === "no", "48 GB too big for 8 GB 
 
 console.log("== recommendation ==");
 ok(recommendFor({ gpu: { vendor: "nvidia", vramGB: 12 }, ramGB: 9 }).id === "q27", "12 GB card + 9 GB memory gets Qwen3.8 27B (3-bit), not the 80B");
+ok(recommendFor({ gpu: { vendor: "nvidia", vramGB: 12 }, ramGB: 9 }, undefined, false).id === "moe35", "no llama-server in the build: a 12 GB card gets an Eta Engine model, never the 27B that cannot start");
+{ const cm = await import("./colibri.mjs"); const m35 = CATALOG.find((m) => m.id === "moe35");
+  const igpu = { gpu: { vendor: "amd", name: "AMD Radeon(TM) 780M", vramGB: 8 }, ramGB: 24, diskFreeGB: 200 };
+  ok(fitFor(igpu, m35).level === "ok" && !cm.colibriPlan(igpu).vulkan && cm.colibriPlan(igpu).gpuAny, "AMD built-in chip with 8 GB set aside: not called a graphics card, but the chip is still tested on first start");
+  ok(fitFor({ gpu: { vendor: "amd", name: "AMD Radeon RX 6600", vramGB: 8 }, ramGB: 16, diskFreeGB: 200 }, m35).level === "fast", "a real AMD card (RX 6600) still counts as a card");
+  ok(fitFor({ gpu: { vendor: "amd", name: "AMD Radeon RX 6700M", vramGB: 10 }, ramGB: 16, diskFreeGB: 200 }, m35).level === "fast", "a laptop AMD card (RX 6700M) still counts as a card");
+  ok(recommendFor({ gpu: { vendor: "intel", name: "Intel(R) UHD Graphics", vramGB: 1 }, ramGB: 8, diskFreeGB: 200 }, undefined, false).id === "moe35", "Intel built-in chip, 8 GB: gets the same 35B Eta Engine model"); }
 ok(recommendFor({ gpu: { vendor: "nvidia", vramGB: 24 }, ramGB: 32 }).id === "q27hi", "24 GB card gets the higher quality 27B file");
 ok(recommendFor({ ramGB: 16, diskFreeGB: 200 }).id === "moe35", "no graphics card, 16 GB memory: the 35B streaming model (Colibri), not a small one");
 ok(recommendFor({ ramGB: 8, diskFreeGB: 200 }).id === "moe35", "8 GB memory, no card: the 35B streaming model on the processor");

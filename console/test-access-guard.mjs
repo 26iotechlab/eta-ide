@@ -1,7 +1,7 @@
 // Security test: the engine server must refuse other websites, fake host names and the network, and still serve its own window.
 import http from "http"; import { spawn, spawnSync } from "child_process"; import fs from "fs"; import os from "os";
 const PORT = 8799, home = fs.mkdtempSync(os.tmpdir() + "/eta-guard-");
-const eng = spawn(process.execPath, ["server.mjs"], { cwd: new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), env: { ...process.env, PORT: String(PORT), USERPROFILE: home, HOME: home }, stdio: "ignore" });
+const eng = spawn(process.execPath, ["server.mjs"], { cwd: new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), env: { ...process.env, PORT: String(PORT), USERPROFILE: home, HOME: home, ETA_AUTO_APPROVE: "1" }, stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const call = (method, path, headers = {}, host = "127.0.0.1") => new Promise((res) => {
   const r = http.request({ host, port: PORT, path, method, headers }, (x) => { let b = ""; x.on("data", (c) => (b += c)); x.on("end", () => res(x.statusCode)); });

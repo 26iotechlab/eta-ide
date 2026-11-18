@@ -8,4 +8,6 @@ It includes third-party software under their own licences:
   (resources/app/LICENSE.txt and resources/app/ThirdPartyNotices.txt).
 - The streaming engine used by Eta Engine: Apache License 2.0
   (console/THIRD-PARTY-NOTICES.txt).
+- A small Python runtime for the streaming engine's launcher: the "embeddable package" from python.org, Python Software
+  Foundation License (console/python/LICENSE.txt).
 - AI models downloaded by the user keep their own licences.

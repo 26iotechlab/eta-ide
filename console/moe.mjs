@@ -27,6 +27,7 @@ import * as path from "path";
 import { existsSync, readdirSync } from "fs";
 import * as fs from "fs/promises";
 import { execFile } from "child_process";
+import { fileURLToPath } from "url"; // NOT new URL(...).pathname: that keeps %20 for a space, and the default install folder is "Eta IDE"
 
 // ------------------------------------------------------------------ model ladder
 // Coding MoE models, smallest-active-first. `active` drives SPEED, `total` drives the
@@ -141,7 +142,7 @@ export function hfRec(tier) {
 // in "llm 2" (a second folder, not the original "llm"), which an exact-name check would have
 // silently missed. Prefix match, not exact — future variants ("llm-2", "llm_backup") work too.
 function localModelDirs() {
-  const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+  const here = path.dirname(fileURLToPath(import.meta.url));
   const parent = path.join(here, "..");
   const found = new Set([path.join(here, "models"), path.join(parent, "llm")]);
   try {
@@ -430,7 +431,7 @@ export function meetsCudaVersion(installedVersion, requiredVersion = REQUIRED_CU
 }
 export function findLlamaServer(hw = null) {
   const exe = os.platform() === "win32" ? "llama-server.exe" : "llama-server";
-  const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+  const here = path.dirname(fileURLToPath(import.meta.url));
   const g = hw?.gpu || null;
   const preferVulkan = g && ["nvidia", "amd", "intel"].includes(g.vendor);
   // Vendor/VRAM tier says CUDA would help AND the driver actually supports our build — both must

@@ -1,15 +1,25 @@
 // Token meter: what the model is doing right now and how many tokens it read and wrote (Gokul, 2026-11-10:
 // "token count matters"). Exact numbers come from the model server's own report after each call (usage / eval_count);
 // while text is still streaming, received pieces are counted live and marked "about" until the exact number arrives.
-const st = { active: new Map(), read: 0, written: 0, approx: 0, started: 0, genTok: 0, genMs: 0, lastEnd: 0 };
+// holds: how many questions to the user (approval, plan review, ask_user) are open right now. While one is open no model
+// call runs, and the meter used to say "Done" (bug seen 2026-11-10, fixed 2026-11-13: it now says it is waiting for the user).
+// ctxMax: size of the model's context window (tokens) for the current task, 0 = unknown. ctxUsed: how many tokens the LAST model call
+// read (its whole prompt = how full the window is right now; unlike `read`, which adds up all calls). D5, 2026-11-13.
+const st = { active: new Map(), read: 0, written: 0, approx: 0, started: 0, genTok: 0, genMs: 0, lastEnd: 0, holds: 0, ctxMax: 0, ctxUsed: 0 };
 const subs = new Set();
 let seq = 0, timer = null;
 
 function notify() { const s = snapshot(); for (const f of subs) try { f(s); } catch {} }
-function tick() { if (st.active.size && !timer) timer = setInterval(() => { if (!st.active.size) { clearInterval(timer); timer = null; } notify(); }, 1000); }
+function tick() { if ((st.active.size || st.holds) && !timer) timer = setInterval(() => { if (!st.active.size && !st.holds) { clearInterval(timer); timer = null; } notify(); }, 1000); }
 
 export function onMeter(f) { subs.add(f); return () => subs.delete(f); }
-export function resetMeter() { st.read = 0; st.written = 0; st.approx = 0; st.approxKept = 0; st.started = 0; st.genTok = 0; st.genMs = 0; notify(); }
+export function resetMeter() { st.read = 0; st.written = 0; st.approx = 0; st.approxKept = 0; st.started = 0; st.genTok = 0; st.genMs = 0; st.holds = 0; st.ctxUsed = 0; notify(); }
+// the model's context window size for this task (tokens); 0 or a bad value = unknown
+export function meterContext(n) { st.ctxMax = Number.isFinite(n) && n > 0 ? Math.round(n) : 0; notify(); }
+// a question to the user opened (true) or was answered (false)
+export function meterHold(on) { st.holds = Math.max(0, st.holds + (on ? 1 : -1)); if (on) tick(); notify(); }
+// the run ended (done, error or cancelled): no question can still be open
+export function meterRelease() { if (st.holds) { st.holds = 0; notify(); } }
 
 export function meterBegin() {
   const id = ++seq; const now = Date.now();
@@ -29,7 +39,7 @@ export function meterEnd(id, usage) {
   st.active.delete(id); st.lastEnd = Date.now();
   const w = usage && Number.isFinite(usage.written) ? usage.written : null;
   st.approx -= c.live;
-  if (w != null) { st.written += w; st.read += usage.read || 0; }
+  if (w != null) { st.written += w; st.read += usage.read || 0; if (usage.read > 0) st.ctxUsed = usage.read; }
   else { st.written += c.live; st.approxKept = (st.approxKept || 0) + c.live; }
   const tok = w ?? c.live;
   // speed: the server's own generation time when it reports one, else time from the first piece, else the whole call
@@ -44,9 +54,11 @@ export function snapshot() {
   const liveRate = (() => { const c = calls.find((x) => x.first && x.live > 3); return c ? c.live / Math.max(0.5, (now - c.first) / 1000) : 0; })();
   const avgRate = st.genMs ? st.genTok / (st.genMs / 1000) : 0;
   return {
-    busy: calls.length > 0, phase: calls.length ? (writing ? "writing" : "reading") : "done",
+    busy: calls.length > 0, waiting: calls.length === 0 && st.holds > 0,
+    phase: calls.length ? (writing ? "writing" : "reading") : (st.holds > 0 ? "waiting" : "done"),
     written: st.written + st.approx, read: st.read, exact: st.approx === 0 && !st.approxKept,
-    perSec: +(liveRate || avgRate).toFixed(1), seconds: st.started ? Math.round(((calls.length ? now : st.lastEnd || now) - st.started) / 1000) : 0,
+    perSec: +(liveRate || avgRate).toFixed(1), seconds: st.started ? Math.round(((calls.length || st.holds ? now : st.lastEnd || now) - st.started) / 1000) : 0,
+    ctxUsed: st.ctxUsed, ctxMax: st.ctxMax, ctxPct: st.ctxMax && st.ctxUsed ? Math.min(100, Math.round(st.ctxUsed / st.ctxMax * 100)) : 0,
     waitSec: calls.length && !writing ? Math.round((now - Math.min(...calls.map((c) => c.t0))) / 1000) : 0,
   };
 }

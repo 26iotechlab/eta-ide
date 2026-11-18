@@ -9,6 +9,8 @@ import { existsSync } from "fs";
 import * as fsp from "fs/promises";
 import * as path from "path";
 import * as os from "os";
+import { trustState, TRUST_NOTICE, TRUST_CHANGED_NOTICE } from "./pathguard.mjs";
+import { safeEnv } from "./redact.mjs";
 
 const PROTOCOL_VERSION = "2024-11-05";
 
@@ -37,7 +39,8 @@ class McpServer {
   async start(cwd) {
     const { command, args = [], env = {} } = this.cfg || {};
     if (!command) throw new Error(`server '${this.name}' has no command`);
-    const base = { cwd, env: { ...process.env, ...env }, stdio: ["pipe", "pipe", "pipe"], windowsHide: true };
+    // 2026-11-15c: a tool server gets no secret of ours (*_KEY, *_TOKEN, *SECRET*, *PASSWORD*) unless its own "env" names it.
+    const base = { cwd, env: { ...safeEnv(process.env, Object.keys(env || {})), ...env }, stdio: ["pipe", "pipe", "pipe"], windowsHide: true };
     if (process.platform === "win32") {
       const { cmd, shell } = winResolve(command);
       if (shell) this.proc = spawn([cmd, ...args].map(winQuote).join(" "), [], { ...base, shell: true });
@@ -107,13 +110,16 @@ export async function loadMcpFile(p) {
   try { const c = JSON.parse(await fsp.readFile(p, "utf8")); return c.mcpServers || c.servers || {}; } catch { return {}; }
 }
 export const globalMcpPath = () => path.join(os.homedir(), ".eta", "mcp.json");
-export async function loadMcpConfig(root) {
-  const global = await loadMcpFile(globalMcpPath());
+export async function loadProjectMcp(root) {
   let project = {};
   if (root) for (const p of [path.join(root, ".eta", "mcp.json"), path.join(root, ".mcp.json")]) {
     project = await loadMcpFile(p); if (Object.keys(project).length) break;
   }
-  return { ...global, ...project };
+  return project;
+}
+export async function loadMcpConfig(root) {
+  const global = await loadMcpFile(globalMcpPath());
+  return { ...global, ...(await loadProjectMcp(root)) };
 }
 
 // A compact args hint for the tool prompt: {name: "type", optional: "?type"}.
@@ -181,8 +187,16 @@ export async function testMcpServer(name, cfg, root) {
 
 // Start every configured server; return a hub the agent lists/calls tools through.
 // Tools are namespaced mcp__<server>__<tool> so they never collide with built-ins.
-export async function startMcp(root, log = () => {}) {
-  const cfg = await loadMcpConfig(root);
+// FOLDER TRUST (security 2026-11-15): servers declared by the PROJECT (.eta/mcp.json, .mcp.json) are programs a
+// downloaded repo could make us run. They start only when the user trusted the folder (pathguard.mjs). The user's
+// own GLOBAL servers (~/.eta/mcp.json) always start; an untrusted project entry cannot replace a global one.
+export async function startMcp(root, log = () => {}, opts = {}) {
+  const state = opts.trusted === undefined ? trustState(root) : opts.trusted ? "trusted" : "none";
+  const trusted = state === "trusted";
+  const global = await loadMcpFile(globalMcpPath());
+  const project = await loadProjectMcp(root);
+  if (!trusted && Object.keys(project).length && !opts.silent) log(state === "changed" || state === "old" ? TRUST_CHANGED_NOTICE : TRUST_NOTICE);
+  const cfg = trusted ? { ...global, ...project } : global;
   const servers = [];
   const tools = [];
   for (const name of Object.keys(cfg)) {

@@ -70,7 +70,13 @@ const ETA = {
 const p = { ...base, ...ETA };
 // updateUrl: VSCodium's own update address would replace Eta with plain VSCodium. Eta's own address comes later (Cloudflare, needs Gokul's yes).
 // checksums: Eta changes workbench files on purpose, so the base's file checks would show "your installation is corrupt".
-for (const k of ["updateUrl", "checksums", "serverDownloadUrlTemplate", "configurationDefaults"]) delete p[k];
+for (const k of ["updateUrl", "checksums", "serverDownloadUrlTemplate", "configurationDefaults", "releaseNotesUrl"]) delete p[k];
+// Microsoft / GitHub Copilot ADDRESSES from the base (removed 2026-11-15): Microsoft help, video and voice links, and every address inside defaultChatAgent.
+// Only the addresses go. Deleting defaultChatAgent itself (or trustedExtensionAuthAccess) left the window empty and black (tested 2026-11-15).
+for (const k of ["voiceWsUrl", "checksumFailMoreInfoUrl", "documentationUrl", "introductoryVideosUrl", "keyboardShortcutsUrlLinux", "keyboardShortcutsUrlMac", "keyboardShortcutsUrlWin", "requestFeatureUrl", "tipsAndTricksUrl", "twitterUrl"]) delete p[k];
+if (p.defaultChatAgent) for (const k of Object.keys(p.defaultChatAgent)) if (/url/i.test(k)) delete p.defaultChatAgent[k];
+// releaseNotesUrl: the base points it at Microsoft's Visual Studio Code release notes, which opened in a tab at start (2026-11-15). Removed; Eta's own address can be set with ETA_RELEASE_NOTES_URL.
+if (process.env.ETA_RELEASE_NOTES_URL) p.releaseNotesUrl = process.env.ETA_RELEASE_NOTES_URL;
 // Must stay a list: removing the key stops ALL extensions from loading ("not iterable", found 2026-11-10). Empty = no Copilot auto-updates.
 p.builtInExtensionsEnabledWithAutoUpdates = [];
 if (process.env.ETA_UPDATE_URL) p.updateUrl = process.env.ETA_UPDATE_URL;
@@ -130,6 +136,30 @@ for (const f of ["package.json", "LICENSE", "NOTICE", "media", "themes"]) cp(pat
 for (const e of LANG_EXTS) cp(path.join(LAYER, "lang", e), path.join(EXT, e));
 const SKIP = /[\\/](\.hf-cache|\.sys-sandbox|\.test-sandbox|\.eta|\.git)([\\/]|$)|[\\/](test-[^\\/]*|uitest|genimgs|hardimg\d*)\.mjs$|[\\/]drive-kanban\.cjs$|\.log$/;
 cp(path.join(ROOT, "console"), path.join(EXT, "eta-agent", "console"), (s) => !SKIP.test(s));
+// Python for Eta Engine (UPGRADE E1, 2026-11-13). The engine's launcher needs Python 3 (standard library only). Without it a PC that has no
+// Python failed on the first start. We ship python.org's "embeddable" package (about 11 MB, 22 MB unpacked, PSF licence) in console/python.
+// Pinned: exact version, size and SHA-256 (checked when the build downloads it; also published on python.org). 3.13.17 is the last 3.13
+// release with Windows binaries (3.13.18 is source only). To update: change the three values below and run the build.
+const PYV = { version: "3.13.17", size: 11441267, sha256: "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38" };
+{ const { createHash } = await import("crypto");
+  const zip = path.join(LAYER, "python", `python-${PYV.version}-embed-amd64.zip`);
+  const sum = () => createHash("sha256").update(fs.readFileSync(zip)).digest("hex");
+  if (!fs.existsSync(zip) || sum() !== PYV.sha256) {
+    fs.mkdirSync(path.dirname(zip), { recursive: true });
+    const url = `https://www.python.org/ftp/python/${PYV.version}/python-${PYV.version}-embed-amd64.zip`;
+    log("   downloading " + url);
+    const res = await fetch(url); if (!res.ok) fail(`Python download failed: HTTP ${res.status}`);
+    fs.writeFileSync(zip, Buffer.from(await res.arrayBuffer()));
+    if (sum() !== PYV.sha256) { fs.rmSync(zip, { force: true }); fail("the Python download does not match the pinned SHA-256 (deleted). Check PYV in build-eta.mjs."); }
+  }
+  const PYD = path.join(EXT, "eta-agent", "console", "python");
+  fs.rmSync(PYD, { recursive: true, force: true });
+  const AdmZip = createRequire(path.join(ROOT, "console", "package.json"))("adm-zip");
+  new AdmZip(zip).extractAllTo(PYD, true);
+  if (!fs.existsSync(path.join(PYD, "python.exe"))) fail("Python unpacked but python.exe is missing");
+  const t = spawnSync(path.join(PYD, "python.exe"), ["-I", "-c", "import sys; print(sys.version_info[0])"], { encoding: "utf8", timeout: 20000 });
+  if (t.status !== 0 || String(t.stdout).trim() !== "3") fail("the bundled Python does not start: " + (t.stderr || t.error));
+  log(`   Python ${PYV.version} bundled in console/python and started once`); }
 // Smaller download: only the Windows x64 copy of onnxruntime-node (the Mac, Linux and ARM copies were 153 MB), and no
 // source-map files (.map, only for developers). Only the build copy changes, never console/.
 const NM = path.join(EXT, "eta-agent", "console", "node_modules"); let cut = 0;
@@ -137,6 +167,9 @@ const rmCount = (p) => { if (!fs.existsSync(p)) return; for (const f of fs.readd
 const ORT = path.join(NM, "onnxruntime-node", "bin");
 if (fs.existsSync(ORT)) for (const napi of fs.readdirSync(ORT)) { for (const os_ of ["darwin", "linux"]) rmCount(path.join(ORT, napi, os_)); rmCount(path.join(ORT, napi, "win32", "arm64")); }
 for (const f of fs.readdirSync(NM, { recursive: true })) if (String(f).endsWith(".map")) { const p = path.join(NM, f); try { cut += fs.statSync(p).size; fs.rmSync(p); } catch {} }
+// Jest snapshot folders are test data. Their file names are very long: with the install folder in front they passed Windows' 260-character limit and the
+// installer stopped with "MoveFile failed; code 3" (found 2026-11-14). Not needed to run, so they are not shipped.
+for (const f of fs.readdirSync(NM, { recursive: true })) if (/(^|[\\/])__(image_)?snapshots__$/.test(String(f))) rmCount(path.join(NM, String(f)));
 log(`   smaller: ${Math.round(cut / 1048576)} MB of other-system copies and map files removed`);
 // (01) The new base lets an extension live in the right bar itself, so no core change is needed for this any more.
 const pjf = path.join(EXT, "eta-agent", "package.json"); const pj = JSON.parse(rd(pjf));
@@ -163,11 +196,24 @@ log("5. logo, LICENSE, NOTICE, notices, program file properties");
 const left = [];
 const pf = rd(path.join(A, "product.json"));
 for (const bad of ["VSCodium.VSCodium", "\"codium\"", "raw.githubusercontent.com/VSCodium", "\"nameShort\": \"VSCodium\""]) if (pf.includes(bad)) left.push("product.json has " + bad);
+if (/api\.github\.com\/copilot|aka\.ms\/|go\.microsoft\.com\/fwlink/i.test(pf)) left.push("product.json still has Copilot or Microsoft help addresses");
+if (/releaseNotesUrl[^,]*microsoft/i.test(pf)) left.push("product.json still points release notes at Microsoft");
 if (!rd(WB).includes('"Eta Black"')) left.push("theme change missing");
 if (!fs.existsSync(path.join(EXT, "eta-agent", "console", "engine", "coli"))) left.push("Eta Engine missing in console/engine");
+if (!fs.existsSync(path.join(EXT, "eta-agent", "console", "python", "python.exe"))) left.push("bundled Python missing in console/python");
+{ // B4: the engine that ships must be exactly the pinned one (console/engine-pin.json; update it on purpose with: node console/engine-pin.mjs write)
+  const { checkPin, readPin } = await import("./console/engine-pin.mjs");
+  const r = checkPin(path.join(EXT, "eta-agent", "console", "engine"), readPin());
+  if (!r.ok) left.push("the engine differs from the pin (console/engine-pin.json): " + r.problems.slice(0, 5).join("; "));
+}
 if (!fs.existsSync(path.join(EXT, "eta-agent", "dist", "extension.js"))) left.push("agent extension.js missing");
 if (!fs.existsSync(path.join(EXT, "eta-agent", "themes", "eta-black.json"))) left.push("Eta Black theme file missing");
 for (const f of fs.readdirSync(OUT)) if (/vscodium|codium/i.test(f)) left.push("file name with VSCodium: " + f);
+{ // longest file path inside the app. The install folder goes in front of it and Windows allows 260 in total (Inno Setup is not long-path aware).
+  let longest = 0, which = ''; for (const f of fs.readdirSync(OUT, { recursive: true })) { const n = String(f).length + 1; if (n > longest) { longest = n; which = String(f); } }
+  log(`   longest path inside the app: ${longest} characters (an install folder up to ${259 - longest} characters is safe)`);
+  if (longest > 200) left.push(`a file path inside the app is ${longest} characters (limit 200), the installer would fail on normal PCs: ${which.slice(0, 120)}`);
+}
 if (left.length) fail("checks:\n  " + left.join("\n  "));
 fs.writeFileSync(path.join(OUT, "eta-build.json"), JSON.stringify({ base: "VSCodium " + base.version, commit: base.commit, built: new Date().toISOString() }, null, 2));
 log(`6. checks passed\nDONE: Eta IDE on VSCodium ${base.version} in ${OUT}`);

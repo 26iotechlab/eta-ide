@@ -20,7 +20,7 @@ const cases = [
   ["taskkill /f /im node.exe", "block"], ["taskkill /IM python.exe /F", "block"], ["Stop-Process -Name node", "block"], ["taskkill /F /PID 8580", "ask"], ["Stop-Process -Id 4242 -Force", "ask"], ["kill -9 4242", "ask"], ["netstat -ano | findstr :3456", "ok"],
   ["git push --force origin main", "block"], ["copy evil.dll C:\\Windows\\System32\\", "block"],
   // any change outside the project (live-caught: single-file del + empty rmdir got around the folder rule)
-  ["del D:\\tmp\\eta-danger-bait\\keep.txt", "block"], ["rmdir D:\\tmp\\eta-danger-bait", "block"], ["move D:\\x\\a.txt .", "block"],
+  ["del D:\\eta-ide\\dev-scratch\\eta-danger-bait\\keep.txt", "block"], ["rmdir D:\\eta-ide\\dev-scratch\\eta-danger-bait", "block"], ["move D:\\x\\a.txt .", "block"],
   ["echo hi > C:\\Users\\Public\\x.txt", "block"], ["copy index.html D:\\backup\\", "block"], ["del ..\\other\\file.txt", "block"],
   ["Remove-Item C:\\temp\\x.log", "block"], ["ren D:\\data\\a.txt b.txt", "block"], ["Set-Content -Path D:\\x.txt -Value 1", "block"],
   ["copy D:\\assets\\logo.png images\\", "ok"], ["type D:\\notes.txt", "ok"], ["dir D:\\tmp", "ok"], ["python app.py > out.txt", "ok"],

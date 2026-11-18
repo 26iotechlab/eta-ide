@@ -1,12 +1,12 @@
 // Builds the centred Eta IDE logo assets and puts them in every place that had the old logo.
-// Source logo: D:\tmp\eta-logo (the zip package). Safe to run again.
+// Source logo: D:\eta-ide\dev-scratch\eta-logo (the zip package). Safe to run again.
 import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
-const require = createRequire("D:/eta-ide-release/console/package.json");
+const require = createRequire("D:/eta-ide/project/console/package.json");
 const sharp = require("sharp");
 
-const ROOT = "D:/eta-ide-release";
+const ROOT = "D:/eta-ide/project";
 const APP = ROOT + "/dist/Eta-IDE/resources/app";
 const OUT = ROOT + "/brand";
 const BACK = OUT + "/original-backup";

@@ -5,10 +5,11 @@
 //  D. a catalog of model sizes, plus any Hugging Face model by name
 //  E. frees the memory when idle, and loads the model again when you type
 import * as fs from "fs/promises";
-import { createWriteStream, existsSync } from "fs";
+import { createWriteStream, createReadStream, existsSync } from "fs";
+import { createHash } from "crypto";
 import * as os from "os";
 import * as path from "path";
-import { findColibri, colibriPlan, colibriImport, launchColibri, measureColibriTokPerSec } from "./colibri.mjs";
+import { findColibri, colibriPlan, colibriImport, launchColibri, measureColibriTokPerSec, cardVramGB, colibriPack, packedReady } from "./colibri.mjs";
 import { HF_MODELS, computeLlamaFlags, llamaArgsHF, launchLlamaServer, measureLlamaTokPerSec, speedVerdict, findLlamaServer, findLocalModelFile } from "./moe.mjs";
 
 const HF = () => process.env.ETA_HF_BASE || "https://huggingface.co";
@@ -30,7 +31,7 @@ export const CATALOG = [
 // How well a model fits this PC. Honest: real speed is measured after the first load.
 // Colibri models (Mixture of Experts streamed from disk). Measured on the dev PC (2026-11-09): 15 words/s with the card through Vulkan, 2.4 to 3.4 on the processor.
 function colibriFit(hw, m) {
-  const ram = hw?.ramGB || 8; const vram = hw?.gpu && ["nvidia", "amd"].includes(hw.gpu.vendor) ? (hw.gpu.vramGB || 0) : 0; const disk = hw?.diskFreeGB || 0;
+  const ram = hw?.ramGB || 8; const vram = cardVramGB(hw); const disk = hw?.diskFreeGB || 0;
   if (ram < 6) return { level: "no", text: "Needs at least 6 GB of memory." };
   if (disk && disk < m.sizeGB + 3) return { level: "no", text: "Needs " + Math.ceil(m.sizeGB + 3) + " GB of free disk space." };
   if (vram >= 6) return { level: "fast", text: "Streams through your graphics card. Measured 15 words per second on a 12 GB card; other cards not measured." };
@@ -38,7 +39,7 @@ function colibriFit(hw, m) {
 }
 export function fitFor(hw, m) {
   if (m.engine === "colibri") return colibriFit(hw, m);
-  const vram = hw?.gpu && ["nvidia", "amd"].includes(hw.gpu.vendor) ? (hw.gpu.vramGB || 0) : 0;
+  const vram = cardVramGB(hw);
   const ram = hw?.ramGB || 8; const size = m.sizeGB;
   if (vram && size <= vram * 0.92) return { level: "fast", text: "Fits your graphics card" };
   // Memory left for the model = card (90%) + memory minus about 5 GB for Windows and apps. Measured 2026-11-09: a 16.3 GB MoE file on a 12 GB card with 9 GB memory did not fit and gave only 1.7 words per second.
@@ -50,13 +51,26 @@ export function fitFor(hw, m) {
   return { level: "no", text: "Too big for this PC" };
 }
 
+// Cloud offer (2026-11-15h). Under 4 (words per second, the speedVerdict unit) is slow.
+// A first result from 3 to 5 is borderline: measure once more and decide on the second result
+// (a failed second measure, 0, keeps the first). Under 3 or over 5: decide at once.
+export const CLOUD_SLOW = 4, BORDER_LOW = 3, BORDER_HIGH = 5;
+export async function confirmSlow(first, measureAgain) {
+  const a = Math.max(0, Number(first) || 0);
+  if (a < BORDER_LOW || a > BORDER_HIGH || typeof measureAgain !== "function") return { slow: a < CLOUD_SLOW, tokPerSec: a, runs: [a] };
+  let b = 0; try { b = Math.max(0, Number(await measureAgain()) || 0); } catch { b = 0; }
+  const use = b > 0 ? b : a;
+  return { slow: use < CLOUD_SLOW, tokPerSec: use, runs: [a, b] };
+}
+
 const dead = (p) => !p || p.exitCode != null || p.signalCode != null;
 // The model to offer on first start: the biggest one that fits the graphics card ("fast").
 // Without a card, the biggest that fits normal memory ("ok"). Streaming giants are never the default:
 // the 80B file measured 0.6 tokens per second on a 12 GB card with 9 GB memory (2026-11-09).
-export function recommendFor(hw, models = CATALOG) {
+// hasRunner === false: this build has no llama-server, so only Eta Engine (colibri) models can start. Never recommend one that cannot start.
+export function recommendFor(hw, models = CATALOG, hasRunner = true) {
   // Only tested, working models. Order: most capable first (parts that work on each word), then size.
-  const rank = (lvl) => models.filter((m) => !m.custom && fitFor(hw, m).level === lvl && m.id !== "devstral" && m.id !== "gptoss" && m.id !== "moe30")
+  const rank = (lvl) => models.filter((m) => !m.custom && (hasRunner || m.engine === "colibri") && fitFor(hw, m).level === lvl && m.id !== "devstral" && m.id !== "gptoss" && m.id !== "moe30")
     .sort((a, b) => (b.activeB - a.activeB) || (b.sizeGB - a.sizeGB))[0];
   // null = this PC cannot run a model that is good enough. The UI then offers a cloud model or another PC.
   return rank("fast") || rank("ok") || null;
@@ -71,16 +85,33 @@ export function pickFiles(siblings, quant) {
   const all = (siblings || []).filter((s) => /\.gguf$/i.test(s.rfilename) && !/mmproj/i.test(s.rfilename) && hit(s.rfilename));
   if (!all.length) return [];
   const single = all.filter((s) => !shardRe.test(s.rfilename)).sort((a, b) => a.rfilename.length - b.rfilename.length);
-  if (single.length) return [{ name: single[0].rfilename, size: single[0].size }];
+  // E2: keep the SHA-256 fingerprint Hugging Face gives for big (LFS) files (needs ?blobs=true).
+  const item = (s) => ({ name: s.rfilename, size: s.size, sha256: typeof s.lfs?.sha256 === "string" && /^[0-9a-f]{64}$/i.test(s.lfs.sha256) ? s.lfs.sha256.toLowerCase() : undefined });
+  if (single.length) return [item(single[0])];
   const firstShard = all.map((s) => s.rfilename).sort()[0]; const prefix = firstShard.replace(/-\d{5}-of-\d{5}\.gguf$/i, "");
-  return all.filter((s) => s.rfilename.startsWith(prefix)).sort((a, b) => a.rfilename.localeCompare(b.rfilename)).map((s) => ({ name: s.rfilename, size: s.size }));
+  return all.filter((s) => s.rfilename.startsWith(prefix)).sort((a, b) => a.rfilename.localeCompare(b.rfilename)).map(item);
+}
+
+// E2: SHA-256 of a file, read in pieces (model files are 10-60 GB; never load them whole).
+// onProgress(doneBytes, totalBytes) is optional. signal (optional AbortSignal) stops the check.
+export async function sha256File(file, onProgress, signal) {
+  const total = (await fs.stat(file)).size; const h = createHash("sha256"); let done = 0;
+  const rs = createReadStream(file, { highWaterMark: 4 * 1024 * 1024, signal });
+  for await (const chunk of rs) { h.update(chunk); done += chunk.length; if (onProgress) { try { onProgress(done, total); } catch {} } }
+  return h.digest("hex");
+}
+// E2: compare a file with the fingerprint from Hugging Face. No fingerprint given: skipped, not failed.
+export async function verifyDownload(file, expectedSha256, onProgress, signal) {
+  if (!expectedSha256) return { ok: true, skipped: true };
+  const expected = String(expectedSha256).toLowerCase(); const actual = await sha256File(file, onProgress, signal);
+  return actual === expected ? { ok: true } : { ok: false, actual, expected };
 }
 
 export class Host {
   // opts: { stateFile, getHw: async () => hw, isBusy: () => bool, onState: (state) => void, log }
   constructor(opts) {
     this.o = opts; this.handle = null; this.dl = null; this.catalogCache = null;
-    this.s = { status: "none", modelId: "", label: "", message: "", percent: 0, doneGB: 0, totalGB: 0, speedMBs: 0, etaS: 0, tokPerSec: 0, verdict: "", suggest: null, error: "", restarts: 0, idleMin: 30, customs: [] };
+    this.s = { status: "none", modelId: "", label: "", message: "", percent: 0, doneGB: 0, totalGB: 0, speedMBs: 0, etaS: 0, tokPerSec: 0, verdict: "", suggest: null, cloudHint: false, error: "", restarts: 0, idleMin: 30, customs: [] };
     this.exe = null; // test hook: { cmd, pre: [] }
     this.intentional = false; this.restartLog = []; this.lastUsed = Date.now(); this.fails = 0; this.timer = null; this.launching = null;
   }
@@ -93,7 +124,7 @@ export class Host {
     this.s.idleMin = Number.isFinite(c.idleMin) ? c.idleMin : 30; this.s.customs = Array.isArray(c.customs) ? c.customs : []; this.speed = c.speed || {}; this.s.colibriVk = c.colibriVk && typeof c.colibriVk === "object" ? c.colibriVk : {};
     if (c.modelId) {
       const m = this.find(c.modelId);
-      if (m) { this.s.modelId = m.id; this.s.label = m.label; this.s.status = (await this.installed(m)) ? "sleeping" : "needs-download"; this.s.message = this.s.status === "sleeping" ? "Ready. Loads when you send a message." : "Not downloaded yet."; const sp = this.speed[m.id]; if (sp) { this.s.tokPerSec = sp.tokPerSec; this.s.verdict = speedVerdict(sp.tokPerSec).level; } }
+      if (m) { this.s.modelId = m.id; this.s.label = m.label; this.s.status = (await this.installed(m)) ? "sleeping" : "needs-download"; this.s.message = this.s.status === "sleeping" ? "Ready. Loads when you send a message." : "Not downloaded yet."; const sp = this.speed[m.id]; if (sp) { this.s.tokPerSec = sp.tokPerSec; this.s.verdict = speedVerdict(sp.tokPerSec).level; this.s.cloudHint = !!sp.cloudHint; } }
     }
     clearInterval(this.timer); this.timer = setInterval(() => this._tick().catch(() => {}), 4000); this.timer.unref?.();
   }
@@ -110,8 +141,11 @@ export class Host {
     const mf = await this.manifest(m);
     if (mf) { let ok = true; for (const f of mf.files) { try { if ((await fs.stat(path.join(this.dirFor(m), f.name))).size !== f.size) ok = false; } catch { ok = false; } } if (ok) return path.join(this.dirFor(m), mf.files[0].name); }
     if (m.tier) return await findLocalModelFile(m.tier); // a file the user already placed by hand
+    // Eta Engine model already packed (the downloaded GGUF was removed after the packed copy started once): it is installed.
+    if (m.engine === "colibri" && packedReady(this.packedDir(m))) return this.packedDir(m);
     return null;
   }
+  packedDir(m) { return path.join(this.dirFor(m), "colibri-packed"); }
   async installed(m) { return !!(await this.installedFile(m)); }
 
   // ---------- A: download with progress and resume ----------
@@ -127,7 +161,7 @@ export class Host {
   async download(m) {
     if (this.dl) throw new Error("A download is already running.");
     const ctl = new AbortController(); this.dl = { ctl, m, paused: false };
-    this.set({ status: "downloading", modelId: m.id, label: m.label, message: "Getting the file list…", error: "", percent: 0, doneGB: 0, totalGB: m.sizeGB || 0, suggest: null });
+    this.set({ status: "downloading", modelId: m.id, label: m.label, message: "Getting the file list…", error: "", percent: 0, doneGB: 0, totalGB: m.sizeGB || 0, suggest: null, cloudHint: false });
     try {
       const files = await this._listFiles(m); const total = files.reduce((a, f) => a + f.size, 0);
       const dir = this.dirFor(m); await fs.mkdir(dir, { recursive: true });
@@ -135,16 +169,17 @@ export class Host {
       let finished = 0, lastT = Date.now(), lastB = 0, speed = 0, lastSet = 0;
       for (const f of files) {
         const dest = path.join(dir, f.name);
-        if (existsSync(dest) && (await fs.stat(dest)).size === f.size) { finished += f.size; continue; }
+        if (existsSync(dest) && (await fs.stat(dest)).size === f.size) { f.verified = await this._checkFile(f, dest, ctl.signal); finished += f.size; continue; }
         await this._dlFile(`${HF()}/${m.repo}/resolve/main/${encodeURI(f.name)}`, dest, f.size, ctl.signal, (cur) => {
           const done = finished + cur, now = Date.now();
           if (now - lastSet < 500) return; lastSet = now;
           if (now - lastT >= 1000) { speed = (done - lastB) / ((now - lastT) / 1000); lastT = now; lastB = done; }
           this.set({ percent: Math.min(99, Math.round(done / total * 100)), doneGB: +(done / GB).toFixed(2), totalGB: +(total / GB).toFixed(2), speedMBs: +(speed / 1e6).toFixed(1), etaS: speed > 0 ? Math.round((total - done) / speed) : 0, message: "Downloading…" });
         });
+        f.verified = await this._checkFile(f, dest, ctl.signal);
         finished += f.size;
       }
-      await fs.writeFile(path.join(dir, "manifest.json"), JSON.stringify({ repo: m.repo, quant: m.quant, files: files.map((f) => ({ name: f.name, size: f.size })) }));
+      await fs.writeFile(path.join(dir, "manifest.json"), JSON.stringify({ repo: m.repo, quant: m.quant, files: files.map((f) => ({ name: f.name, size: f.size, ...(f.sha256 ? { sha256: f.sha256 } : {}), verified: f.verified === true })) }));
       this.dl = null; this.set({ percent: 100, message: "Downloaded." });
     } catch (e) {
       const paused = this.dl && this.dl.paused; this.dl = null;
@@ -152,26 +187,47 @@ export class Host {
       this.set({ status: "error", error: String(e.message || e), message: String(e.message || e), speedMBs: 0 }); throw e;
     }
   }
+  // E2: check one finished file against its Hugging Face fingerprint. Returns true (checked) or false (no fingerprint).
+  // A wrong file is deleted (with its .part) and the download stops with an error.
+  async _checkFile(f, dest, signal) {
+    if (!f.sha256) { const log = this.o?.log || this.log; const msg = `No fingerprint from Hugging Face for ${f.name}. Checked by size only.`; try { log ? log(msg) : console.log(msg); } catch {} return false; }
+    this.set({ message: "Checking the file…" }); let last = 0;
+    const v = await verifyDownload(dest, f.sha256, (done, all) => { const now = Date.now(); if (now - last < 500) return; last = now; this.set({ message: `Checking the file… ${Math.min(100, Math.round(done / (all || 1) * 100))}%` }); }, signal);
+    if (!v.ok) {
+      await fs.rm(dest, { force: true }).catch(() => {}); await fs.rm(dest + ".part", { force: true }).catch(() => {});
+      throw new Error("The downloaded file does not match the fingerprint from Hugging Face. It was deleted. Press Resume to download it again.");
+    }
+    return true;
+  }
   async _dlFile(url, dest, size, signal, onBytes) {
     const part = dest + ".part";
     for (let attempt = 0; attempt < 8; attempt++) {
       let have = 0; try { have = (await fs.stat(part)).size; } catch {}
       if (have > size) { await fs.rm(part, { force: true }); have = 0; }
       if (have === size) break;
+      // 2026-11-15c STALL TIMEOUT: a connection that stays open but sends nothing would hang the download forever.
+      // When no byte arrives for stallMs (60 s; ETA_DL_STALL_MS or opts.stallMs for tests), this try is stopped
+      // and the normal retry below resumes from the .part file. Only the outer `signal` means "the user stopped".
+      const stallMs = Number(this.o?.stallMs || process.env.ETA_DL_STALL_MS) || 60000;
+      const ctl = new AbortController(); const onOuter = () => ctl.abort(); signal?.addEventListener?.("abort", onOuter, { once: true }); if (signal?.aborted) ctl.abort();
+      let stallT = null; const poke = () => { clearTimeout(stallT); stallT = setTimeout(() => ctl.abort(new Error("no data for " + Math.round(stallMs / 1000) + " s")), stallMs); };
       try {
-        const res = await fetch(url, { signal, headers: { range: `bytes=${have}-`, "user-agent": "eta-ide" } });
+        poke();
+        const res = await fetch(url, { signal: ctl.signal, headers: { range: `bytes=${have}-`, "user-agent": "eta-ide" } });
         if (res.status === 401 || res.status === 403) throw Object.assign(new Error("Hugging Face refused the download (login needed)."), { fatal: true });
         if (res.status === 416) break;
         if (!res.ok) throw new Error("Hugging Face answered " + res.status);
         if (res.status === 200 && have > 0) { await fs.rm(part, { force: true }); have = 0; } // server ignored the resume request
         const out = createWriteStream(part, { flags: have ? "a" : "w" });
         let cur = have;
-        try { for await (const chunk of res.body) { if (!out.write(chunk)) await new Promise((r) => out.once("drain", r)); cur += chunk.length; onBytes(cur); } }
+        try { for await (const chunk of res.body) { poke(); if (!out.write(chunk)) await new Promise((r) => out.once("drain", r)); cur += chunk.length; onBytes(cur); } }
         finally { await new Promise((r) => out.end(r)); }
       } catch (e) {
         if (signal.aborted) throw e; if (e.fatal) throw e;
-        this.set({ message: "Connection problem. Trying again…" }); await new Promise((r) => setTimeout(r, Math.min(15000, 1500 * (attempt + 1)))); continue;
-      }
+        if (ctl.signal.aborted) this.set({ message: "The download stopped sending data. Trying again…" });
+        else this.set({ message: "Connection problem. Trying again…" });
+        await new Promise((r) => setTimeout(r, Math.min(15000, 1500 * (attempt + 1)))); continue;
+      } finally { clearTimeout(stallT); signal?.removeEventListener?.("abort", onOuter); }
       if ((await fs.stat(part)).size === size) break;
     }
     if ((await fs.stat(part).catch(() => ({ size: -1 }))).size !== size) throw new Error("The download stopped before the end. Press Resume to try again.");
@@ -196,6 +252,8 @@ export class Host {
     if (this.handle && this.s.modelId !== m.id) this._kill("switch");
     if (!(await this.installed(m))) {
       const hw = await this.hw(); const fit = fitFor(hw, m);
+      // Fail BEFORE a multi-GB download if this build cannot start the model afterwards.
+      if (m.engine !== "colibri" && !this._exe(hw)) throw new Error("The model runner (llama-server) is not in this build yet, so this model cannot start. Choose an Eta Engine model.");
       if (fit.level === "no") throw new Error(`${m.label} is too big for this PC (${m.sizeGB} GB). Choose a smaller one.`);
       await this.download(m);
     }
@@ -248,19 +306,50 @@ export class Host {
     const file = await this.installedFile(m); if (!file) { this.set({ status: "needs-download", message: "Not downloaded yet." }); throw new Error("not downloaded"); }
     this.intentional = false; this.set({ status: "loading", message: isRestart ? "Restarting the model…" : "Loading the model…", error: "" });
     try {
-      colibriImport(c, file, path.join(this.dirFor(m), "colibri"));
-      const plan = colibriPlan(hw); const mdir = path.join(this.dirFor(m), "colibri");
+      // Packed format first (about 30% faster without a card, measured). Packing is one time, in the background, and only
+      // when the disk has room for a second copy. If it fails or there is no room, the model runs as before (link mode).
+      const pdir = this.packedDir(m); let mdir = pdir;
+      if (!packedReady(pdir)) {
+        let room = false;
+        try { const st = await fs.statfs(this.dirFor(m)); room = st.bavail * st.bsize > (await fs.stat(file)).size + 2 * GB; } catch {}
+        if (room) {
+          this.set({ status: "loading", message: "Preparing the model for faster reading (one time, about 1 to 5 minutes)…" });
+          const r = await colibriPack(c, file, pdir);
+          this.log?.(r.ok ? "Eta Engine: packed model ready (faster reading)." : "Eta Engine: packing failed, using the normal format: " + r.error);
+        } else this.log?.("Eta Engine: not enough free disk to pack the model, using the normal format.");
+        this.set({ status: "loading", message: isRestart ? "Restarting the model…" : "Loading the model…" });
+      }
+      if (!packedReady(pdir)) { colibriImport(c, file, path.join(this.dirFor(m), "colibri")); mdir = path.join(this.dirFor(m), "colibri"); }
+      const plan = colibriPlan(hw);
       const saved = this.s.colibriVk?.[m.id];
       if (typeof saved === "boolean") plan.vulkan = saved;
       else if (plan.gpuAny) plan.vulkan = await this._pickColibriDevice(c, mdir, plan, m);
       const h = await launchColibri(c, mdir, PORT, plan, (s) => this.log?.(s), 300000);
       this.handle = h; this.apiModel = h.apiModel || ""; this.fails = 0; this.set({ status: "ready", message: "Ready.", restarts: this.s.restarts });
+      // The packed copy started and answered the health check: only now remove the downloaded GGUF (frees ~16 GB).
+      if (mdir === pdir) await this._dropDownloadedGguf(m);
       if (!isRestart && !this.speed?.[m.id]) this._speedTest(m).catch(() => {});
     } catch (e) {
       this.handle = null; const msg = this._explain(e); this.set({ status: "error", error: msg, message: msg }); throw new Error(msg);
     }
   }
   // First start on a PC with any graphics chip: measure the processor alone and with the graphics chip, keep the faster, remember it.
+  // Remove the downloaded GGUF of an Eta Engine model once its packed copy has started. Only files listed in this model's
+  // own manifest, only inside this model's own folder. Any error: keep the files (wasted disk, never a broken model).
+  async _dropDownloadedGguf(m) {
+    if (!packedReady(this.packedDir(m))) return;
+    const dir = this.dirFor(m); const mf = await this.manifest(m); if (!mf) return;
+    try {
+      for (const f of mf.files || []) {
+        const p = path.join(dir, f.name);
+        if (!/\.gguf$/i.test(f.name) || path.dirname(path.resolve(p)) !== path.resolve(dir)) continue;
+        await fs.rm(p, { force: true });
+      }
+      await fs.rm(path.join(dir, "manifest.json"), { force: true });
+      await fs.rm(path.join(dir, "colibri"), { recursive: true, force: true }); // the old link-mode folder points at the removed file
+      this.log?.("Eta Engine: removed the downloaded file; the packed copy is used from now on.");
+    } catch (e) { this.log?.("Eta Engine: could not remove the downloaded file: " + String(e?.message || e)); }
+  }
   async _pickColibriDevice(c, mdir, plan, m) {
     const res = {};
     for (const vk of [false, true]) {
@@ -290,19 +379,27 @@ export class Host {
   }
 
   // ---------- C: speed test and a smaller suggestion ----------
+  // One speed measure. Test hook: this.measure = async (m) => number.
+  async _measureOnce(m) {
+    if (this.measure) { try { return Number(await this.measure(m)) || 0; } catch { return 0; } }
+    try { const r = m.engine === "colibri" ? await measureColibriTokPerSec(PORT, this.apiModel, { maxTokens: 48, timeoutMs: 240000 }) : await measureLlamaTokPerSec(PORT, { maxTokens: 32, timeoutMs: 240000 }); return r.tokPerSec || 0; } catch { return 0; } // no answer in 4 minutes = far too slow
+  }
   async _speedTest(m) {
     this.set({ message: "Checking speed…" });
-    let tok = 0;
-    try { const r = m.engine === "colibri" ? await measureColibriTokPerSec(PORT, this.apiModel, { maxTokens: 48, timeoutMs: 240000 }) : await measureLlamaTokPerSec(PORT, { maxTokens: 32, timeoutMs: 240000 }); tok = r.tokPerSec; } catch { tok = 0; } // no answer in 4 minutes = far too slow
+    // A borderline first result (3 to 5) can be a cold start: measure once more and use the second result.
+    const c = await confirmSlow(await this._measureOnce(m), () => this._measureOnce(m));
+    const tok = c.tokPerSec;
     const v = speedVerdict(tok);
-    this.speed = this.speed || {}; this.speed[m.id] = { tokPerSec: tok, at: Date.now() }; this._save();
     let suggest = null;
-    if (v.level === "tooslow") {
+    if (v.level === "tooslow" || c.slow) {
       const hw = await this.hw(); const lv = (x) => fitFor(hw, x).level;
-      const cand = this.all().filter((x) => x.sizeGB < m.sizeGB && ["fast", "ok"].includes(lv(x))).sort((x, y) => (lv(x) === "fast" ? 0 : 1) - (lv(y) === "fast" ? 0 : 1) || y.sizeGB - x.sizeGB)[0];
+      const cand = this.all().filter((x) => x.sizeGB < m.sizeGB && ["fast", "ok"].includes(lv(x)) && (x.engine === "colibri" || this._exe(hw))) /* never suggest a model this build cannot start */.sort((x, y) => (lv(x) === "fast" ? 0 : 1) - (lv(y) === "fast" ? 0 : 1) || y.sizeGB - x.sizeGB)[0];
       if (cand) suggest = { id: cand.id, label: cand.label, sizeGB: cand.sizeGB };
     }
-    this.set({ tokPerSec: tok, verdict: v.level, suggest, message: v.level === "tooslow" ? "Ready, but far too slow for agent work." : "Ready." });
+    // Cloud card: only when the speed is confirmed slow AND no smaller local model fits. Never switches by itself.
+    const cloudHint = c.slow && !suggest;
+    this.speed = this.speed || {}; this.speed[m.id] = { tokPerSec: tok, at: Date.now(), runs: c.runs, cloudHint }; this._save();
+    this.set({ tokPerSec: tok, verdict: v.level, suggest, cloudHint, speedRuns: c.runs, message: v.level === "tooslow" ? "Ready, but far too slow for agent work." : "Ready." });
   }
 
   // ---------- B + E: watcher ----------

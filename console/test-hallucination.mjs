@@ -4,7 +4,7 @@ import { findColibri, colibriPlan, launchColibri } from "./colibri.mjs";
 import { CHAT_RULES } from "./chatrules.mjs";
 import { spawnSync } from "child_process";
 const c = findColibri(); const plan = colibriPlan({ ramGB: 8.3, gpu: { vendor: "nvidia", vramGB: 12 } }); plan.vulkan = true;
-const h = await launchColibri(c, process.argv[2] || "D:/tmp/colibri-model/q35", 8897, plan, () => {});
+const h = await launchColibri(c, process.argv[2] || "D:/eta-ide/dev-scratch/colibri-model/q35", 8897, plan, () => {});
 const OLD = "You are Eta, a concise, correct local coding assistant running inside the Eta IDE. When asked about code, be direct and practical.";
 const NEW = OLD + "\n\n" + CHAT_RULES();
 const items = [

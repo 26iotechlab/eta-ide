@@ -2,7 +2,7 @@
   "name": "eta-agent",
   "displayName": "Eta IDE Agent",
   "description": "The built-in agent of Eta IDE. Plans, edits code, runs commands and checks its own work, on the model you choose.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "26io",
   "engines": {
     "vscode": "^1.90.0"
@@ -70,6 +70,10 @@
         "title": "Eta: Edit Selection (inline)"
       },
       {
+        "command": "eta.toggleTabCompletion",
+        "title": "Eta: Turn Tab Completion On or Off"
+      },
+      {
         "command": "eta.importSettings",
         "title": "Eta: Import Settings from VS Code / Cursor"
       },
@@ -93,8 +97,8 @@
       },
       {
         "command": "eta.inlineEdit",
-        "key": "ctrl+k",
-        "mac": "cmd+k",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k",
         "when": "editorTextFocus"
       },
       {
@@ -144,6 +148,23 @@
           "type": "boolean",
           "default": false,
           "description": "Run shell commands without asking."
+        },
+        "eta.tabCompletion": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show grey code suggestions while you type; press Tab to accept. Off by default: the suggestions use the same local model as the agent. They pause while an agent run is working."
+        },
+        "eta.tabCompletionDelayMs": {
+          "type": "number",
+          "default": 600,
+          "minimum": 150,
+          "maximum": 3000,
+          "description": "How long to wait after you stop typing before a Tab suggestion is requested (milliseconds)."
+        },
+        "eta.inlineEditPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ctrl+Alt+K edit: show the change as a diff and wait for Apply. Turn off to apply the edit at once."
         },
         "eta.browserHeadless": {
           "type": "boolean",

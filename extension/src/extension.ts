@@ -10,6 +10,7 @@ import * as os from "os";
 import * as http from "http";
 import { spawn, ChildProcess, execSync } from "child_process";
 import { EtaBrowserPanel } from "./browserPanel";
+import { ghostContext, worthAsking, cleanGhost, contextAround, applyReplacement, describeChange, stillSame } from "./editLogic";
 
 const PORT = 8713; // dedicated port: never collides with the standalone app (8712)
 const LSP_PORT = PORT + 1; // 8714 — the extension's language-intelligence bridge
@@ -22,7 +23,7 @@ function engineDir(context: vscode.ExtensionContext): string | null {
   const candidates = [
     cfg,
     path.join(context.extensionPath, "console"),          // bundled (fork/production)
-    "d:\\eta-ide\\console",                               // dev fallback on this machine
+    "d:\\eta-ide\\project\\console",                       // dev fallback on this machine
   ].filter(Boolean) as string[];
   for (const c of candidates) if (fs.existsSync(path.join(c, "server.mjs"))) return c;
   return null;
@@ -59,7 +60,8 @@ function waitForEngine(tries = 60): Promise<boolean> {
 }
 
 // POST JSON to the local engine and parse the JSON reply.
-function enginePost(pathname: string, payload: unknown): Promise<any> {
+// timeoutMs 0 = wait as long as the model needs. `token` (optional): when the editor cancels, the request is dropped.
+function enginePost(pathname: string, payload: unknown, timeoutMs = 0, token?: vscode.CancellationToken): Promise<any> {
   return new Promise((resolve, reject) => {
     const data = Buffer.from(JSON.stringify(payload));
     const req = http.request({ host: "127.0.0.1", port: PORT, path: pathname, method: "POST",
@@ -68,6 +70,8 @@ function enginePost(pathname: string, payload: unknown): Promise<any> {
       res.on("data", (c) => (body += c));
       res.on("end", () => { try { resolve(JSON.parse(body || "{}")); } catch (e) { reject(e); } });
     });
+    if (timeoutMs > 0) req.setTimeout(timeoutMs, () => req.destroy(new Error("timeout")));
+    token?.onCancellationRequested(() => req.destroy(new Error("cancelled")));
     req.on("error", reject); req.write(data); req.end();
   });
 }
@@ -125,7 +129,7 @@ class EtaManagerPanel {
     // column — worse than before. Close the docked copy so the tab gets the whole editor area.
     await vscode.commands.executeCommand("workbench.action.closeAuxiliaryBar").then(undefined, () => { /* already closed */ });
     const panel = vscode.window.createWebviewPanel(
-      "etaManager", "Eta Manager",
+      "etaManager", "Eta",
       { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
       { enableScripts: true, retainContextWhenHidden: true },
     );
@@ -312,6 +316,7 @@ export function activate(context: vscode.ExtensionContext) {
   (globalThis as any).__etaCtx = context; // so importSettings can locate this fork's User dir
   startEngine(context);
   startLspBridge();
+  startEditorSync(context);
   const provider = new EtaPanel(context);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(EtaPanel.viewId, provider, { webviewOptions: { retainContextWhenHidden: true } }),
@@ -324,6 +329,13 @@ export function activate(context: vscode.ExtensionContext) {
       if (url) EtaBrowserPanel.show(context.extensionUri, url);
     }),
     vscode.commands.registerCommand("eta.inlineEdit", () => inlineEdit()),
+    vscode.workspace.registerTextDocumentContentProvider(EditPreview.scheme, editPreview),
+    vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, new EtaTabCompletion()),
+    vscode.commands.registerCommand("eta.toggleTabCompletion", async () => {
+      const cfg = vscode.workspace.getConfiguration("eta"); const on = !cfg.get<boolean>("tabCompletion", false);
+      await cfg.update("tabCompletion", on, vscode.ConfigurationTarget.Global);
+      vscode.window.showInformationMessage(on ? "Eta Tab completion is ON. It waits while an agent run is working." : "Eta Tab completion is OFF.");
+    }),
     vscode.commands.registerCommand("eta.importSettings", () => importSettings()),
   );
 
@@ -351,33 +363,145 @@ export function activate(context: vscode.ExtensionContext) {
   }, 1400);
 }
 
-// ---- Inline edit (Cmd-K): rewrite the selection per a one-line instruction ----
+// ---- Inline edit (Ctrl+Alt+K; it was Ctrl+K, which broke VS Code's own Ctrl+K shortcuts): rewrite the selection per a one-line instruction, shown as a diff first (D2) ----
+// The proposed text is shown in VS Code's own diff view (left: your file, right: the file with the edit). Nothing is changed
+// until the user presses "Apply". If the selected text changed while the model was working, nothing is applied.
+class EditPreview implements vscode.TextDocumentContentProvider {
+  static readonly scheme = "eta-edit";
+  private texts = new Map<string, string>();
+  private seq = 0;
+  provideTextDocumentContent(uri: vscode.Uri): string { return this.texts.get(uri.path) ?? ""; }
+  add(fileName: string, text: string): vscode.Uri {
+    const uri = vscode.Uri.from({ scheme: EditPreview.scheme, path: `/${++this.seq}/${fileName}` });
+    this.texts.set(uri.path, text); return uri;
+  }
+  drop(uri: vscode.Uri) { this.texts.delete(uri.path); }
+}
+const editPreview = new EditPreview();
+
+async function closePreviewTab(uri: vscode.Uri) {
+  try {
+    for (const g of vscode.window.tabGroups.all) for (const t of g.tabs) {
+      if (t.input instanceof vscode.TabInputTextDiff && t.input.modified.toString() === uri.toString()) { await vscode.window.tabGroups.close(t); return; }
+    }
+  } catch { /* the tab is already gone */ }
+}
+
 async function inlineEdit() {
   const editor = vscode.window.activeTextEditor;
   if (!editor) { vscode.window.showInformationMessage("Eta: open a file and select code to edit."); return; }
-  let range: vscode.Range = editor.selection.isEmpty
-    ? editor.document.lineAt(editor.selection.active.line).range
+  const doc = editor.document;
+  const range: vscode.Range = editor.selection.isEmpty
+    ? doc.lineAt(editor.selection.active.line).range
     : new vscode.Range(editor.selection.start, editor.selection.end);
-  const code = editor.document.getText(range);
+  const code = doc.getText(range);
   if (!code.trim()) { vscode.window.showInformationMessage("Eta: nothing to edit — select some code first."); return; }
   const instruction = await vscode.window.showInputBox({
     prompt: "Eta — describe the edit for the selected code",
     placeHolder: "e.g. add error handling / convert to async / add JSDoc",
   });
   if (!instruction) return;
-  await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "Eta is editing…" }, async () => {
+  const full = doc.getText(), start = doc.offsetAt(range.start), end = doc.offsetAt(range.end), version = doc.version;
+  const around = contextAround(full, start, end);
+  let edit = "";
+  const ok = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "Eta is editing…" }, async () => {
     try {
-      if (!(await waitForEngine(20))) { vscode.window.showErrorMessage("Eta engine not reachable."); return; }
+      if (!(await waitForEngine(20))) { vscode.window.showErrorMessage("Eta engine not reachable."); return false; }
       const r = await enginePost("/api/edit", {
-        code, instruction, lang: editor.document.languageId,
-        path: vscode.workspace.asRelativePath(editor.document.uri),
+        code, instruction, lang: doc.languageId, path: vscode.workspace.asRelativePath(doc.uri),
+        before: around.before, after: around.after,
       });
-      if (r?.error) { vscode.window.showErrorMessage("Eta: " + r.error); return; }
-      const edit = String(r?.edit ?? "");
-      if (!edit || edit === code) { vscode.window.showInformationMessage("Eta: no change."); return; }
-      await editor.edit((b) => b.replace(range, edit));
-    } catch (e: any) { vscode.window.showErrorMessage("Eta inline edit failed: " + (e?.message || e)); }
+      if (r?.error) { vscode.window.showErrorMessage("Eta: " + r.error); return false; }
+      edit = String(r?.edit ?? "");
+      return true;
+    } catch (e: any) { vscode.window.showErrorMessage("Eta inline edit failed: " + (e?.message || e)); return false; }
   });
+  if (!ok) return;
+  if (!edit || edit === code) { vscode.window.showInformationMessage("Eta: no change."); return; }
+
+  const apply = async () => {
+    // is the text we are about to replace still what it was when we asked? (the user may have kept typing)
+    let cur: vscode.TextDocument;
+    try { cur = await vscode.workspace.openTextDocument(doc.uri); } catch { vscode.window.showWarningMessage("Eta: the file is no longer available. Nothing was changed."); return; }
+    const span = cur.getText(new vscode.Range(cur.positionAt(start), cur.positionAt(end)));
+    if (!stillSame(span, code, cur.version, version)) { vscode.window.showWarningMessage("Eta: the selected text changed while the edit was prepared. Nothing was changed. Run the edit again."); return; }
+    const we = new vscode.WorkspaceEdit();
+    we.replace(doc.uri, new vscode.Range(cur.positionAt(start), cur.positionAt(end)), edit);
+    if (!(await vscode.workspace.applyEdit(we))) { vscode.window.showWarningMessage("Eta: VS Code did not accept the edit."); return; }
+    try { await vscode.window.showTextDocument(cur, { viewColumn: editor.viewColumn, preserveFocus: false }); } catch { /* editor closed */ }
+  };
+
+  if (!vscode.workspace.getConfiguration("eta").get<boolean>("inlineEditPreview", true)) { await apply(); return; }
+  const base = path.basename(doc.uri.fsPath || doc.fileName || "edit");
+  const uri = editPreview.add(base, applyReplacement(full, start, end, edit));
+  try {
+    await vscode.commands.executeCommand("vscode.diff", doc.uri, uri, `Eta edit: ${base} (${describeChange(code, edit)})`, { preview: true });
+    const pick = await vscode.window.showInformationMessage(`Eta edit ready: ${describeChange(code, edit)}. Apply it?`, "Apply", "Discard");
+    await closePreviewTab(uri);
+    if (pick === "Apply") await apply();
+  } finally { editPreview.drop(uri); }
+}
+
+// ---- Editor state for the agent (D4): open file, cursor line and the errors VS Code shows ----
+// Sent to the engine a moment after you stop moving or typing, only when something changed. The engine adds it to a new task as
+// short background text. Only file paths, line numbers and error messages are sent (no file text), and only to the local engine.
+function startEditorSync(context: vscode.ExtensionContext) {
+  let timer: NodeJS.Timeout | undefined; let last = "";
+  const send = async () => {
+    try {
+      const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath; if (!root) return;
+      const rel = (u: vscode.Uri) => u.scheme === "file" ? path.relative(root, u.fsPath).replace(/\\/g, "/") : "";
+      const ed = vscode.window.activeTextEditor; const act = ed && ed.document.uri.scheme === "file" ? ed : undefined;
+      const problems: { path: string; line: number; severity: string; message: string }[] = [];
+      for (const [uri, ds] of vscode.languages.getDiagnostics()) {
+        const r = rel(uri); if (!r || r.startsWith("..")) continue;
+        for (const d of ds) {
+          if (d.severity !== vscode.DiagnosticSeverity.Error && d.severity !== vscode.DiagnosticSeverity.Warning) continue;
+          problems.push({ path: r, line: d.range.start.line + 1, severity: d.severity === vscode.DiagnosticSeverity.Error ? "error" : "warning", message: d.message });
+          if (problems.length >= 80) break;
+        }
+        if (problems.length >= 80) break;
+      }
+      const open = vscode.window.visibleTextEditors.map((e) => rel(e.document.uri)).filter(Boolean);
+      const payload = { ws: root, active: act ? { path: rel(act.document.uri), line: act.selection.active.line + 1, col: act.selection.active.character + 1 } : null, open, problems };
+      const key = JSON.stringify(payload); if (key === last) return; last = key;
+      await enginePost("/api/editor-state", payload, 3000);
+    } catch { /* engine not up yet: the next change sends it again */ }
+  };
+  const later = () => { if (timer) clearTimeout(timer); timer = setTimeout(send, 800); };
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(later),
+    vscode.window.onDidChangeTextEditorSelection(later),
+    vscode.languages.onDidChangeDiagnostics(later),
+    { dispose: () => { if (timer) clearTimeout(timer); } },
+  );
+  later();
+}
+
+// ---- Tab completion (D1): grey text at the cursor, Tab accepts. OFF by default. ----
+// Why off: on one graphics card the model that completes your code is the same one the agent uses. It also waits
+// while an agent run is working (the engine answers "busy"), so it never slows a run down.
+class EtaTabCompletion implements vscode.InlineCompletionItemProvider {
+  private inflight = false;
+  async provideInlineCompletionItems(doc: vscode.TextDocument, pos: vscode.Position, _ctx: vscode.InlineCompletionContext, token: vscode.CancellationToken) {
+    const cfg = vscode.workspace.getConfiguration("eta");
+    if (!cfg.get<boolean>("tabCompletion", false)) return;
+    if (doc.uri.scheme !== "file" && doc.uri.scheme !== "untitled") return;
+    if (doc.lineCount > 20000) return;
+    const delay = Math.min(3000, Math.max(150, cfg.get<number>("tabCompletionDelayMs", 600)));
+    await new Promise((r) => setTimeout(r, delay));              // wait for a typing pause
+    if (token.isCancellationRequested || this.inflight) return;  // the user typed on, or the model is still busy with the last one
+    const { prefix, suffix } = ghostContext(doc.getText(), doc.offsetAt(pos));
+    if (!worthAsking(prefix, suffix, doc.languageId)) return;
+    this.inflight = true;
+    try {
+      const r = await enginePost("/api/complete", { prefix, suffix, lang: doc.languageId }, 20000);
+      if (token.isCancellationRequested || r?.busy) return;
+      const t = cleanGhost(r?.completion, prefix, suffix);
+      if (!t) return;
+      return [new vscode.InlineCompletionItem(t, new vscode.Range(pos, pos))];
+    } catch { return; } finally { this.inflight = false; }
+  }
 }
 
 // ---- Migration importer: bring settings + keybindings from VS Code / Cursor ----

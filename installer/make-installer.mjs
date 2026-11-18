@@ -67,10 +67,12 @@ SetupIconFile=${path.join(ROOT, "brand", "eta-app-icon.ico")}
 UninstallDisplayIcon={app}\\Eta IDE.exe
 UninstallDisplayName=Eta IDE
 LicenseFile=${path.join(ROOT, "LICENSE")}
-Compression=lzma2/ultra64
+; 2026-11-14: gentler on memory. The old ultra64 + 4 threads used about 1.7 GB and froze VS Code on a 8 GB PC.
+Compression=lzma2/max
+LZMADictionarySize=16384
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
-LZMANumBlockThreads=4
+LZMANumBlockThreads=1
 WizardStyle=modern
 WizardImageFile=${big.join(",")}
 WizardSmallImageFile=${small.join(",")}

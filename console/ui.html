@@ -229,6 +229,16 @@ html.themed .work{--w-txt:var(--txt);--w-dim:var(--txt2);--w-faint:var(--txt3);-
 .work .wappr{border:1px solid rgba(175,175,175,.3);background:var(--soft);border-radius:7px;padding:9px;margin:6px 0}
 .work .wappr pre{white-space:pre-wrap;max-height:160px;overflow:auto;background:rgba(6,6,6,.8);padding:8px;border-radius:8px;margin:6px 0;font-size:11.5px;font-family:"Cascadia Code",Consolas,monospace}
 .work .wappr .btn{margin-right:6px;height:24px;font-size:12px}
+/* B2: review a finished run block by block (engine: /api/run-changes, /api/revert-hunks) */
+.work .hkbox{margin:6px 0}
+.work .hkfile{border:1px solid rgba(175,175,175,.25);border-radius:7px;padding:8px;margin:6px 0}
+.work .hkname{font-weight:650;margin-bottom:4px;overflow-wrap:anywhere}
+.work .hkdim{color:var(--w-dim);font-weight:400;font-size:12px}
+.work .hk{margin:6px 0}
+.work .hkhead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--w-dim)}
+.work .hk pre{white-space:pre-wrap;overflow:auto;max-height:200px;background:rgba(6,6,6,.8);padding:8px;border-radius:8px;margin:4px 0;font-size:12px;font-family:"Cascadia Code",Consolas,monospace}
+.work .hkr{color:var(--red);display:block}.work .hka{color:var(--green);display:block}.work .hkc{color:var(--w-dim);display:block}
+.work .hk .btn{height:22px;font-size:11.5px;flex:none}
 .usefile{display:flex;align-items:center;gap:6px;color:var(--txt3);font-size:11px;padding:0 14px 8px;cursor:pointer}
 .usefile input{accent-color:var(--accent);margin:0}
 #imgchip{display:flex;align-items:center;gap:8px;margin:0 12px 8px;padding:6px 9px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:11.5px;color:var(--txt2)}
@@ -503,6 +513,10 @@ html.embed #right.disconnected #connect{display:flex;flex-direction:column;overf
 .fhead b{color:var(--txt);font-family:"Cascadia Code",Consolas,monospace;font-size:11.5px}
 .fhead .badd{color:#89d185}.fhead .brem{color:#f48771}
 .fhead .spin{animation:blink 1s infinite}
+.ebar{display:flex;align-items:center;gap:6px;margin:4px 0 2px;font-size:11.5px;color:var(--txt2)}
+.ebtn{font:inherit;font-size:11.5px;padding:1px 9px;border-radius:4px;border:1px solid var(--line,#444);background:transparent;color:var(--txt);cursor:pointer}
+.ebtn:hover{background:rgba(127,127,127,.15)}.ebtn:disabled{opacity:.5;cursor:default}
+.ebar .est{color:var(--txt3)}.ebar .emsg{color:#f48771}
 .fopen{margin-left:auto;font-size:10.5px;color:var(--accent2);cursor:pointer;white-space:nowrap}
 .fopen:hover{text-decoration:underline}
 .livecode,.codeview{max-height:190px;overflow:auto;font:11.5px/1.5 "Cascadia Code",Consolas,monospace;background:#080808;border:1px solid var(--border);border-radius:5px;padding:7px 9px;white-space:pre-wrap;word-break:break-all;margin:0}
@@ -662,6 +676,7 @@ html.embed .usefile input{display:none}
 html.embed .usefile:hover{border-color:#878787;color:var(--txt)}
 html.embed .usefile:has(input:checked){background:rgba(135,135,135,.16);border-color:#878787;color:#bebebe}
 @media (max-width:379px){html.embed .usefile{display:none}}
+@media (max-width:330px){html.embed #agpill{display:none}}
 html.embed .phead{padding-top:2px}
 .mdpre code{background:none!important;padding:0!important;color:inherit!important;font-size:inherit!important}
 /* ---- chat history menu ---- */
@@ -719,6 +734,23 @@ html.embed .phead{padding-top:2px}
 #cust .mbar{height:6px;border-radius:4px;background:rgba(127,127,127,.2);margin-top:8px;overflow:hidden}
 #cust .mbar i{display:block;height:100%;background:var(--accent,#919191);transition:width .4s}
 #cust .mbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+/* cloud-first (2026-11-15h): plain card, privacy box, chat-panel indicator */
+.cloudcard{border:1px solid var(--border2,#303030);border-radius:10px;padding:10px 12px;margin:0 0 12px;color:var(--txt);font-size:12.5px;line-height:1.5;text-align:left}
+.cloudcard .cc-t{font-weight:600;margin-bottom:4px}.cloudcard .cc-p{margin:4px 0;color:var(--txt2,#9e9e9e)}
+.cc-warn{color:var(--txt);border-left:3px solid #e0b44c;padding-left:8px}
+.cloudcard .cc-btns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.cc-b{background:rgba(127,127,127,.14);border:1px solid var(--border2,#303030);color:var(--txt);border-radius:8px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+.cc-b.pri{background:var(--accent,#919191);border-color:transparent;color:#fff}
+.cloudcard .cc-off{font-size:11.5px;color:var(--txt2,#9e9e9e)}
+.cc-privacy{font-size:12px;line-height:1.5;margin:8px 0;text-transform:none;letter-spacing:0}
+.cc-privacy label{display:block;margin-top:6px;text-transform:none;letter-spacing:0;font-size:12px}
+.cc-privacy input{width:auto;margin-right:6px}
+#cloudbar{border-bottom:1px solid var(--border2,#303030);padding:6px 10px;font-size:12px;line-height:1.45;color:var(--txt)}
+#cloudbar .cb-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#cloudbar .cb-tag{background:#e0b44c;color:#111;border-radius:6px;padding:1px 7px;font-weight:600;font-size:11px}
+#cloudbar .cb-t{flex:1;min-width:140px;color:var(--txt2,#9e9e9e)}
+#cloudbar button{background:rgba(127,127,127,.14);border:1px solid var(--border2,#303030);color:var(--txt);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer}
+#cloudbar .cb-first,#cloudbar .cb-off{margin-top:6px;color:var(--txt)}
 #cust .msug{border:1px solid #e0b44c;border-radius:10px;padding:10px;margin-bottom:12px;color:var(--txt);font-size:12.5px;line-height:1.5}
 #cust .mh{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt2);margin:16px 2px 6px}
 #cust .mrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border,#151515)}
@@ -813,12 +845,90 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
 /* token meter above the input box */
 #upd{font:12px/1.45 var(--ui);color:var(--txt);margin:0 6px 6px;padding:7px 9px;border:1px solid var(--line, #333);border-radius:8px;display:flex;gap:8px;align-items:center}
 #upd a{color:var(--txt);font-weight:600}
+#trustbar{font:12px/1.45 var(--ui);color:var(--txt);margin:0 6px 6px;padding:7px 9px;border:1px solid var(--line, #333);border-radius:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#trustbar .tb{margin-left:auto;display:flex;gap:6px}
+#trustbar button{font:12px var(--ui);color:var(--txt);background:none;border:1px solid var(--line, #333);border-radius:6px;padding:3px 9px;cursor:pointer}
+#trustbar button:hover{border-color:var(--txt2)}
+#trust-changed{flex-basis:100%;font-weight:600}
+#trust-list{flex-basis:100%;max-height:180px;overflow:auto;color:var(--txt2)}
+#trust-list .th{margin-top:4px}
+#trust-list ul{margin:2px 0 0;padding-left:18px}
+#trust-list code{font:11px/1.4 var(--mono, monospace);white-space:pre-wrap;word-break:break-all;color:var(--txt)}
 #upd .x{margin-left:auto;background:none;border:0;color:var(--txt2);cursor:pointer;font-size:14px;line-height:1}
 #tmeter{font:12px/1.4 var(--ui);color:var(--txt2);padding:4px 6px 6px;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere} /* wraps in a narrow panel: speed and time stay visible */
 #tmeter .tm-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--txt);margin-right:7px;vertical-align:1px;animation:tmpulse 1.2s ease-in-out infinite}
 @keyframes tmpulse{50%{opacity:.25}}
 /* eta logo in the welcome box and next to answers */
 .eta-logo{display:block;width:62%;height:62%;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20387%20387%27%3E%3Cg%20transform%3D%27translate(0%2014)%27%3E%3Cpolygon%20points%3D%27387%2C76%20268%2C0%2098%2C46%200%2C202%20105%2C359%20278%2C341%20373%2C268%20134%2C307%2059%2C197%20128%2C87%20270%2C45%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27256%2C53%20132%2C110%2099%2C150%20223%2C108%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27383%2C190%20291%2C129%20139%2C171%2098%2C239%20139%2C288%20190%2C204%20293%2C167%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27283%2C197%20277%2C216%20271%2C222%20253%2C229%20265%2C232%20277%2C242%20283%2C261%20290%2C240%20295%2C235%20311%2C229%20298%2C224%20289%2C216%27%20fill%3D%27%23000%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20387%20387%27%3E%3Cg%20transform%3D%27translate(0%2014)%27%3E%3Cpolygon%20points%3D%27387%2C76%20268%2C0%2098%2C46%200%2C202%20105%2C359%20278%2C341%20373%2C268%20134%2C307%2059%2C197%20128%2C87%20270%2C45%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27256%2C53%20132%2C110%2099%2C150%20223%2C108%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27383%2C190%20291%2C129%20139%2C171%2098%2C239%20139%2C288%20190%2C204%20293%2C167%27%20fill%3D%27%23000%27%2F%3E%3Cpolygon%20points%3D%27283%2C197%20277%2C216%20271%2C222%20253%2C229%20265%2C232%20277%2C242%20283%2C261%20290%2C240%20295%2C235%20311%2C229%20298%2C224%20289%2C216%27%20fill%3D%27%23000%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/contain no-repeat}
+/* ---- Phase 1: control and calm (quiet, one status dot, no other motion) ---- */
+#right{position:relative}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.work .wst{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:7px;border-top:1px solid var(--w-line);font-size:11.5px;color:var(--w-dim);font-variant-numeric:tabular-nums;position:relative}
+.work .wst .tm-dot{margin-right:0;flex:0 0 6px}
+.work .wst .wst-t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.work .wst .wstop{height:22px;font-size:11.5px;padding:0 10px;flex:0 0 auto}
+.work .wtop{display:flex;justify-content:flex-end;margin:4px 0 0}
+.work .wdet{background:none;border:0;color:var(--w-faint);font:11px var(--ui);cursor:pointer;padding:0 2px}
+.work .wdet:hover{color:var(--w-dim);text-decoration:underline}
+.work.nodet .sec{display:none}
+.work .wactions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.work .wactions .btn{height:26px;font-size:12px}
+.cpwrap{position:relative}
+.cpbtn{font:10.5px var(--ui);padding:1px 8px;border:1px solid var(--border);background:var(--card);color:var(--txt2);border-radius:4px;cursor:pointer;line-height:1.5}
+.cpbtn:hover{color:var(--txt)}
+.cpwrap>.cpbtn{position:absolute;top:5px;right:5px}
+.fhead .cpbtn,.cmdhead .cpbtn{margin-left:6px;flex:0 0 auto}
+.cmdhead .cpbtn{margin-left:auto}
+/* ---- Phase 2: one compact block per tool call + live plan status (text labels, no motion) ---- */
+.work .wtool.tblk{display:block;margin:1px 0}
+.work.nodet .wtool.tblk.sec{display:none}
+.work .tblk .tbh{display:flex;gap:8px;align-items:baseline;width:100%;min-width:0;background:none;border:0;padding:1px 0;margin:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.work .tblk .tbh:disabled{cursor:default}
+.work .tblk .tbh:hover .ttg,.work .tblk .tbh:focus-visible .ttg{text-decoration:underline}
+.work .tblk .ttg{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.work .tblk .tst{flex:0 0 auto;color:var(--w-faint);font-variant-numeric:tabular-nums}
+.work .tblk .tone{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--w-faint)}
+.work .tblk .tfail{flex:0 0 auto;color:var(--red);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+.work .tblk .tbr{display:none;margin:2px 0 4px 46px;padding:4px 8px;border-left:2px solid var(--w-line2);white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font-size:11px;color:var(--w-dim)}
+.work .tblk.open .tbr{display:block}
+.work .tblk.st-no .ttg{color:var(--txt2)}
+.cmdbadge .cmdms{font-variant-numeric:tabular-nums}
+.work ol.wplist{margin:4px 0;padding:0 0 0 10px;list-style:none;counter-reset:ps}
+.work ol.wplist li{counter-increment:ps;display:flex;gap:8px;align-items:baseline;white-space:normal}
+.work ol.wplist li::before{content:counter(ps) ".";flex:0 0 auto;color:var(--w-faint);font-variant-numeric:tabular-nums}
+.work ol.wplist .pst{display:none;flex:0 0 58px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--w-faint)}
+.work ol.wplist.haslive .pst{display:inline-block}
+.work ol.wplist li[data-s="working"]{color:var(--txt)}
+.work ol.wplist li[data-s="working"] .pst{color:var(--txt);font-weight:700}
+.work ol.wplist li[data-s="done"] .pst{color:var(--green)}
+.work ol.wplist li[data-s="failed"] .pst,.work ol.wplist li[data-s="stopped"] .pst{color:var(--red);font-weight:700}
+.fref{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.fref:hover{text-decoration:underline}
+#jumpbtn{display:none;position:absolute;left:50%;transform:translateX(-50%);z-index:6;font:12px var(--ui);padding:5px 12px;border-radius:14px;border:1px solid var(--border2,var(--border));background:var(--card);color:var(--txt);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+/* 2026-11-15 roundtable review, round 1: one calm centered column when the chat is wide; smaller page preview */
+html.embed #chatlog,#chatlog{padding-left:max(14px,calc((100% - 820px)/2));padding-right:max(14px,calc((100% - 820px)/2))}
+#chatin{width:calc(100% - 32px);max-width:820px;margin:0 auto 16px;box-sizing:border-box}
+.work .wshot{max-height:240px;width:auto;object-fit:cover;object-position:top left}
+/* 2026-11-15 roundtable round 3: always-visible agent count + Agent map (idea from the Claude Code panel's agent pill) */
+.agpill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--border2);border-radius:999px;background:transparent;color:var(--txt2);font:11.5px var(--ui);cursor:pointer;white-space:nowrap}
+.agpill:hover{border-color:var(--txt3);color:var(--txt)}
+.agpill .agdot{width:7px;height:7px;border-radius:50%;background:var(--txt3);opacity:.6}
+.agpill.on{color:var(--txt)} .agpill.on .agdot{background:var(--txt);opacity:1;animation:agpulse 1.4s ease-in-out infinite}
+@keyframes agpulse{50%{opacity:.35}}
+#agmap{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+.agmap-card{width:min(560px,92vw);max-height:80vh;overflow:auto;background:var(--elev,#0d0d0d);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.agmap-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.agmap-head b{font-size:15px;color:var(--txt)} #agmap-sub{font-size:12px;color:var(--txt3)}
+#agmap-x{margin-left:auto;background:none;border:0;color:var(--txt3);font-size:20px;line-height:1;cursor:pointer}
+.agrun{margin:0 0 14px} .agrun-t{font-size:12px;color:var(--txt2);margin:0 0 6px;display:flex;gap:8px}
+.agrun-t span:last-child{margin-left:auto;color:var(--txt3)}
+.agc{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:5px}
+.agc .agdot{width:8px;height:8px;border-radius:50%;background:var(--txt3);opacity:.5;flex:0 0 8px}
+.agc.live .agdot{background:var(--txt);opacity:1;animation:agpulse 1.4s ease-in-out infinite}
+.agc .agn{font-size:12.5px;color:var(--txt);font-weight:600} .agc .agd{font-size:11px;color:var(--txt3)}
+.agc .agt{margin-left:auto;font-size:11.5px;color:var(--txt3);white-space:nowrap}
+.agmap-empty{font-size:12.5px;color:var(--txt3);padding:8px 0}
+.work .ansft{display:flex;gap:10px;align-items:center;margin-top:4px;font-size:10.5px;color:var(--w-dim);opacity:.7}.work .anscopy{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0}.work .anscopy:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -1016,10 +1126,12 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
         <input id="cn-key" type="password" spellcheck="false" placeholder="leave blank for local models">
         <label class="cn-lbl">Model</label>
         <input id="cn-model" list="cn-models" spellcheck="false" placeholder="click Detect to list your models"><datalist id="cn-models"></datalist>
+        <div class="cc-privacy" id="cn-privacy-row" style="display:none"><div class="cc-warn">This address is not on this PC. Your code and files will leave this PC and go to the provider. You pay the provider. Eta has no cost counter yet.</div><label><input type="checkbox" id="cn-privacy">I understand that my code and files leave this PC.</label></div>
         <div class="cn-status" id="cn-status"></div>
         <div class="cn-btns"><button class="btn g" id="cn-detect">Detect models</button><button class="btn" id="cn-save">Connect</button></div>
       </div>
     </div>
+    <div id="cloudbar" style="display:none"></div>
     <div id="rtabs">
       <button class="rtab on" data-rt="chat">Chat</button>
       <button class="rtab" data-rt="plan">Plan</button>
@@ -1049,6 +1161,7 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
     <div id="imgchip" style="display:none"><img id="imgthumb"><span>image attached — analyzed via OCR + pixel stats</span><button id="imgx" title="Remove">×</button></div>
     <div id="filechip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg><span id="filechipname"></span><span class="fx" id="filex" title="Remove">×</span></div>
     <div id="upd" role="status" style="display:none"></div>
+    <div id="trustbar" role="status" style="display:none"><span>This folder has its own commands and tool servers. Run them only if you trust where this folder came from.</span><span class="tb"><button id="trust-yes">Trust this folder</button><button id="trust-no">Not now</button></span><div id="trust-changed" style="display:none"></div><div id="trust-list"></div></div>
     <div id="tmeter" aria-live="off" style="display:none"></div>
     <div id="chatin">
       <div id="slashmenu" style="display:none"></div>
@@ -1058,14 +1171,16 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
         <button class="attb" id="slashbtn" title="Commands (type / to see them)">/</button>
         <button class="attb" id="attach-img" title="Attach an image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg></button>
         <label class="usefile" title="Include the open file as context"><input type="checkbox" id="usefile"><span>Open file</span></label>
+        <button type="button" class="agpill" id="agpill" title="Which agents are working now (click for the map)"><span class="agdot"></span><span id="agpill-n">0 agents</span></button>
         <span class="chatin-model" id="chatin-model"><span class="cmdot"></span>no model</span>
-        <label class="autochip" title="When on, the agent edits files without asking. When off, it asks first."><input type="checkbox" id="auto" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg><span class="on">Edit automatically</span><span class="off">Ask before editing</span></label>
+        <label class="autochip" title="When on, the agent edits files without asking. When off, it asks first."><input type="checkbox" id="auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg><span class="on">Edit automatically</span><span class="off">Ask before editing</span></label>
         <button class="btn" id="send" title="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
       </div>
       <input type="file" id="file-input" hidden>
       <input type="file" id="img-input" accept="image/*" hidden>
     </div>
     <div class="eta-note">AI may make mistakes. Double-check all generated code.</div>
+    <div id="agmap" style="display:none" role="dialog" aria-label="Agent map"><div class="agmap-card"><div class="agmap-head"><b>Agent map</b><span id="agmap-sub"></span><button type="button" id="agmap-x" aria-label="Close">&times;</button></div><div id="agmap-body"></div></div></div>
   </div>
 </div>
 
@@ -1095,11 +1210,15 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
         <button data-b="http://localhost:8000">vLLM</button>
         <button data-b="https://openrouter.ai/api">OpenRouter</button>
         <button data-b="https://api.openai.com">OpenAI</button>
+        <button data-b="https://api.anthropic.com">Anthropic</button>
+        <button data-b="https://generativelanguage.googleapis.com">Gemini</button>
       </div>
     </div>
     <div class="mrow"><label>Endpoint URL</label><input id="cfg-base" spellcheck="false" placeholder="http://localhost:11434 or any OpenAI-compatible base URL"></div>
-    <div class="mrow"><label>API key</label><input id="cfg-key" type="password" spellcheck="false" placeholder="only if your endpoint needs one"></div>
+    <div class="mrow"><label>API key</label><input id="cfg-key" type="password" spellcheck="false" autocomplete="off" placeholder="only if your endpoint needs one">
+      <label id="cfg-keyclear-row" style="display:none;text-transform:none;letter-spacing:0;font-size:12px;margin:6px 0 0"><input type="checkbox" id="cfg-keyclear" style="width:auto;margin-right:6px">Remove the saved key</label></div>
     <div class="mrow"><label>Model</label><input id="cfg-model" list="cfg-models" spellcheck="false" placeholder="click Detect to list your models"><datalist id="cfg-models"></datalist></div>
+    <div class="mrow cc-privacy" id="cfg-privacy-row" style="display:none"><div class="cc-warn">This address is not on this PC. The task, the files Eta opens, command output and test output will be sent to the provider. Your key is saved encrypted on this PC and is never shown again. You pay the provider. Eta has no cost counter yet.</div><label><input type="checkbox" id="cfg-privacy">I understand that my code and files leave this PC.</label></div>
     <div class="mhint" id="cfg-status"></div>
     <div class="mbtns"><button class="btn g" id="cfg-cancel">Cancel</button><button class="btn g" id="cfg-detect">Detect</button><button class="btn" id="cfg-save">Save & Test</button></div>
   </div>
@@ -1170,7 +1289,7 @@ html.embed #cust .ms,html.embed #cust .ds,html.embed #cust .mrow .fit{font-size:
 <script src="/vendor/xterm/addon-fit.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 // Embedded mode (inside the VS Code / VSCodium fork): the host provides window
 // chrome + the workspace, so hide our own title bar and take the folder from ?ws.
 const QP = new URLSearchParams(location.search);
@@ -1232,6 +1351,64 @@ initSplit($("split-sb"),  {var:"--sbw",  axis:"x", invert:false, min:130, max:()
 initSplit($("split-chat"),{var:"--chw",  axis:"x", invert:true,  min:280, max:()=>window.innerWidth*0.55, def:420, key:"eta.chw"});
 initSplit($("split-term"),{var:"--termh",axis:"y", invert:true,  min:80,  max:()=>window.innerHeight*0.75, def:220, key:"eta.termh"});
 
+/* ================= cloud-first (2026-11-15h) ================= */
+// A cloud model is OFFERED only when this PC is slow (the speed test, confirmed) or below the minimum.
+// The local model stays the default. Eta never switches by itself. Every dynamic text goes through esc().
+const CLOUD_PROVIDERS=[{name:"Anthropic",base:"https://api.anthropic.com"},{name:"Gemini",base:"https://generativelanguage.googleapis.com"},{name:"OpenAI-style",base:"https://api.openai.com"}];
+function isLocalUrl(b){ return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/i.test(String(b||"").trim()); }
+function cloudHostOf(b){ try{ return new URL(String(b)).host||String(b||""); }catch{ return String(b||""); } }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch{ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch{} }
+function cloudCardOff(){ return lsGet("eta.cloudCardOff")==="1" || window._cloudKept===true; }
+// o: {tokPerSec:number} after a slow speed test, or {tooSmall:true, dev:"..."} when the PC is below the minimum.
+function cloudCardHtml(o){
+  o=o||{}; let h='<div class="cloudcard" id="cloudcard">';
+  if(o.tooSmall) h+='<div class="cc-t">This PC is below the minimum for a good local model'+(o.dev?' ('+esc(String(o.dev))+')':'')+'.</div><div class="cc-p">We do not offer small models, because they make too many mistakes.</div>';
+  else h+='<div class="cc-t">Speed measured on this PC: '+esc(String(o.tokPerSec))+' words per second.</div><div class="cc-p">At this speed, one task can take 30 minutes or more.</div><div class="cc-p">You can keep using the local model. It is free, and your code stays on this PC.</div>';
+  h+='<div class="cc-p">You can also connect a cloud model with your own key. A cloud model is usually much faster.</div>';
+  h+='<div class="cc-p cc-warn">Privacy: with a cloud model, your code and files leave this PC and go to the provider (the company that runs the model).</div>';
+  h+='<div class="cc-p">Cost: you pay the provider for what you use. Eta has no cost counter yet, so check your usage on the provider\'s website.</div>';
+  h+='<div class="cc-btns">'+(o.tooSmall?'':'<button class="cc-b pri" data-cc="keep">Keep the local model</button>')+CLOUD_PROVIDERS.map(p=>'<button class="cc-b" data-cc="prov" data-base="'+esc(p.base)+'">'+esc(p.name)+'</button>').join("")+'</div>';
+  if(!o.tooSmall) h+='<a href="#" class="cc-off" data-cc="off">Do not show this again</a>';
+  return h+'</div>';
+}
+// Provider button: open the existing key screen with the address filled in. The saved key is never read back.
+async function cloudPickProvider(base){
+  await openSettings();
+  $("cfg-base").value=base; $("cfg-model").value=""; $("cfg-key").value="";
+  $("cfg-status").textContent="Paste your key from the provider, click Detect, choose a model, tick the box, then Save."; $("cfg-status").style.color="";
+  cfgPrivacySync();
+}
+function wireCloudCard(root, onDone){
+  if(!root) return;
+  root.querySelectorAll("[data-cc]").forEach(b=>b.onclick=(e)=>{ e.preventDefault(); const a=b.dataset.cc;
+    if(a==="keep"){ window._cloudKept=true; if(onDone) onDone(); }
+    else if(a==="off"){ lsSet("eta.cloudCardOff","1"); if(onDone) onDone(); }
+    else if(a==="prov") cloudPickProvider(b.dataset.base); });
+}
+// Privacy box: shown for any address that is not on this PC; saving needs the tick.
+function privacySync(baseId,rowId,boxId){ const row=$(rowId); if(!row) return false; const b=$(baseId).value.trim(); const cloud=!!b&&!isLocalUrl(b); row.style.display=cloud?"block":"none"; if(!cloud) $(boxId).checked=false; return cloud; }
+function cfgPrivacySync(){ return privacySync("cfg-base","cfg-privacy-row","cfg-privacy"); }
+function cnPrivacySync(){ return privacySync("cn-base","cn-privacy-row","cn-privacy"); }
+// Chat panel indicator: a cloud model is active. First use: one short notice per address.
+function cloudBar(d){
+  const el=$("cloudbar"); if(!el) return;
+  if(!d||!d.cloud){ el.style.display="none"; el.innerHTML=""; return; }
+  const host=cloudHostOf(d.base), seen=lsGet("eta.cloudSeen:"+(d.base||""))==="1";
+  let h='<div class="cb-row"><span class="cb-tag">Cloud model</span><span class="cb-t">'+esc(String(d.model||""))+' at '+esc(host)+'. Your code is sent to this provider.</span><button id="cb-back">Back to the local model</button></div>';
+  if(!d.eta) h+='<div class="cb-off">The cloud model does not answer. Check your internet connection and your key, or go back to the local model.</div>';
+  if(!seen) h+='<div class="cb-first">You are using a cloud model for the first time. The task, the files Eta opens, command output and test output are sent to '+esc(host)+'. You pay the provider. Eta has no cost counter yet. <button id="cb-ok">OK</button></div>';
+  el.innerHTML=h; el.style.display="block";
+  $("cb-back").onclick=()=>cloudBackToLocal(d);
+  const okb=$("cb-ok"); if(okb) okb.onclick=()=>{ lsSet("eta.cloudSeen:"+(d.base||""),"1"); cloudBar(d); };
+}
+async function cloudBackToLocal(d){
+  if(d&&d.canGoLocal===false){ if(typeof custOpen==="function") custOpen("models"); return { ok:false }; }
+  let r={}; try{ r=await(await fetch("/api/provider/back-to-local",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).json(); }catch{ r={error:"I could not reach the engine."}; }
+  if(r.ok){ window._cloudKept=true; health(); } else if(typeof uiConfirm==="function") await uiConfirm(r.error||"Could not switch back.","OK","");
+  return r;
+}
+
 /* ================= health (BYOM-aware) ================= */
 let onboardShown = false;
 async function health(){
@@ -1247,8 +1424,9 @@ async function health(){
         $("cfg-status").textContent="Welcome! Eta IDE ships no model. Pick a preset (or paste any Ollama / OpenAI-compatible endpoint), click Detect, choose a model, Save.";
         $("cfg-status").style.color="var(--accent)"; }
     } else {
-      $("stxt").textContent = (d.model||"model") + (d.eta ? " ready" : " offline") + (d.kind==="openai" ? " · API" : (d.local===false ? " · cloud" : ""));
+      $("stxt").textContent = (d.model||"model") + (d.eta ? " ready" : " offline") + (d.cloud ? " · cloud" : "");
     }
+    window._health=d; cloudBar(d);
   }catch{ $("pulse").className="pulse off"; $("stxt").textContent="engine offline"; }
   if($("estatus")) $("estatus").textContent = $("stxt").textContent; // embed header mirror
   if($("chatin-model")){ const el=$("chatin-model"); el.innerHTML='<span class="cmdot"></span>'+esc(disconnected?"no model":$("stxt").textContent); el.classList.toggle("on",!disconnected); if(window._hostSt&&window._hostSt.active) hostChip(); }
@@ -1283,8 +1461,10 @@ if(EMBED){
   async function loadReco(){
     try{ const r=await(await fetch("/api/hardware")).json(); const rec=r.recommendation, hw=r.hardware;
       if(!rec){ if(r.tooSmall&&hw){ const dev=hw.gpu?hw.gpu.name:(hw.ramGB+" GB memory, no graphics card");
-        $("cn-reco-body").innerHTML="Your PC ("+esc(dev)+") cannot run a good model fast yet. We do not offer small models, because they make too many mistakes. A way to run a good model on PCs like yours is in development. For now, you can connect a cloud model with your own key, or a model that runs on another PC.";
-        const go=$("cn-reco-go"); go.style.display="inline-block"; go.textContent="Connect a model"; go.onclick=()=>{ const sb=$("esettings"); if(sb) sb.click(); };
+        // Cloud-first: the plain card (privacy and cost first). A model on another PC still works through the form below.
+        $("cn-reco-body").innerHTML=cloudCardHtml({tooSmall:true,dev})+'<div class="cc-p">You can also use a model that runs on another PC: type its address in the form below.</div>';
+        wireCloudCard($("cn-reco-body"));
+        $("cn-reco-go").style.display="none";
         $("cn-reco").style.display="block"; } return; }
       const dev = hw.gpu ? hw.gpu.name : (hw.ramGB+"GB RAM, no GPU");
       const lowDisk = hw.diskFreeGB && rec.sizeGB && hw.diskFreeGB < rec.sizeGB + 3;
@@ -1296,7 +1476,8 @@ if(EMBED){
     }catch{}
   }
   loadReco();
-  document.querySelectorAll("#cn-presets button").forEach(b=>b.onclick=()=>{ $("cn-base").value=b.dataset.b; $("cn-model").value=""; cnSay("preset set — click Detect to list its models"); });
+  document.querySelectorAll("#cn-presets button").forEach(b=>b.onclick=()=>{ $("cn-base").value=b.dataset.b; $("cn-model").value=""; cnSay("preset set — click Detect to list its models"); cnPrivacySync(); });
+  $("cn-base").addEventListener("input",cnPrivacySync);
   $("cn-detect").onclick=async()=>{
     cnSay("probing endpoint…");
     try{ const r=await probeProvider($("cn-base").value,$("cn-key").value);
@@ -1309,8 +1490,11 @@ if(EMBED){
   $("cn-save").onclick=async()=>{
     const model=$("cn-model").value.trim();
     if(!model){ cnSay("✗ pick a model first (click Detect)","var(--red)"); return; }
+    const cloud=cnPrivacySync();
+    if(cloud&&!$("cn-privacy").checked){ cnSay("Please tick the box first: your code and files will leave this PC.","var(--red)"); return; }
     cnSay("connecting…");
-    try{ const r=await saveProvider($("cn-base").value,$("cn-key").value,model);
+    try{ const r=await saveProvider($("cn-base").value,$("cn-key").value,model,false,cloud);
+      if(r.error){ cnSay("✗ "+r.error,"var(--red)"); return; }
       if(r.eta){ cnSay(`✓ connected (${r.provider.kind}) — '${r.provider.model}'`,"var(--green)"); health(); }
       else cnSay("✗ saved, but that model is not reachable at the endpoint","var(--red)");
     }catch(e){ cnSay("✗ "+e,"var(--red)"); }
@@ -1322,19 +1506,25 @@ if(EMBED){
 async function probeProvider(base, key){
   return await(await fetch("/api/provider/test",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({base:(base||"").trim(),key:(key||"").trim()})})).json();
 }
-async function saveProvider(base, key, model){
-  return await(await fetch("/api/config",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({provider:{base:(base||"").trim(),key:(key||"").trim(),model:(model||"").trim()}})})).json();
+// The engine never sends the saved key back. An empty key field keeps the saved key (same address); clearKey removes it.
+async function saveProvider(base, key, model, clearKey, privacyOk){
+  return await(await fetch("/api/config",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({provider:{base:(base||"").trim(),key:(key||"").trim(),model:(model||"").trim(),clearKey:!!clearKey},privacyOk:privacyOk===true})})).json();
 }
 async function openSettings(){
   try{ const d=await(await fetch("/api/config")).json();
-    $("cfg-base").value=d.provider.base||""; $("cfg-key").value=d.provider.key||""; $("cfg-model").value=d.provider.model||"";
+    $("cfg-base").value=d.provider.base||""; $("cfg-key").value=""; $("cfg-model").value=d.provider.model||"";
+    $("cfg-key").placeholder=d.provider.keySet?("a key is saved"+(d.provider.keyHint?" (ends in "+d.provider.keyHint+")":"")+" - leave empty to keep it"):"only if your endpoint needs one";
+    $("cfg-keyclear").checked=false; $("cfg-keyclear-row").style.display=d.provider.keySet?"block":"none";
   }catch{}
+  $("cfg-privacy").checked=false; cfgPrivacySync();
   $("cfg-status").textContent=""; $("settings").style.display="flex";
 }
 document.querySelectorAll("#presets button").forEach(b=>b.onclick=()=>{
   $("cfg-base").value=b.dataset.b; $("cfg-model").value="";
   $("cfg-status").textContent="preset set — click Detect to list the models there"; $("cfg-status").style.color="";
+  cfgPrivacySync();
 });
+$("cfg-base").addEventListener("input",cfgPrivacySync);
 $("cfg-detect").onclick=async()=>{
   $("cfg-status").textContent="probing endpoint…"; $("cfg-status").style.color="";
   try{
@@ -1350,9 +1540,12 @@ $("settings").addEventListener("mousedown",e=>{ if(e.target.id==="settings") $("
 $("cfg-save").onclick=async()=>{
   const model=$("cfg-model").value.trim();
   if(!model){ $("cfg-status").textContent="✗ pick a model first (click Detect to list them)"; $("cfg-status").style.color="var(--red)"; return; }
+  const cloud=cfgPrivacySync();
+  if(cloud&&!$("cfg-privacy").checked){ $("cfg-status").textContent="Please tick the box first: your code and files will leave this PC."; $("cfg-status").style.color="var(--red)"; return; }
   $("cfg-status").textContent="testing…"; $("cfg-status").style.color="";
   try{
-    const r=await saveProvider($("cfg-base").value,$("cfg-key").value,model);
+    const r=await saveProvider($("cfg-base").value,$("cfg-key").value,model,$("cfg-keyclear").checked,cloud);
+    if(r.error){ $("cfg-status").textContent="✗ "+r.error; $("cfg-status").style.color="var(--red)"; return; }
     $("cfg-status").textContent=r.eta?(`✓ connected (${r.provider.kind}) — '${r.provider.model}' ready`):"✗ saved, but that model is not reachable at the endpoint";
     $("cfg-status").style.color=r.eta?"var(--accent)":"var(--red)";
     health();
@@ -1452,7 +1645,7 @@ function setWorkspace(p){ if(!p) return; WS=p; $("ws").value=p; localStorage.set
   const base=p.split(/[\\/]/).filter(Boolean).pop()||p;
   $("wsname").style.display="flex"; $("wsnametxt").textContent=base.toUpperCase();
   $("sbws").style.display="flex"; $("sbwstxt").textContent=base;
-  loadTree(); updBranch();
+  loadTree(); updBranch(); if(typeof checkTrust==="function") checkTrust();
   if(termId) fetch("/api/term/input",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:termId,data:'cd "'+p+'"\r\n'})}); }
 $("open").onclick = () => setWorkspace($("ws").value.trim());
 $("refresh").onclick = () => loadTree();
@@ -1657,22 +1850,132 @@ if(!EMBED) initTerm(); // embed: the host provides the terminal — no hidden sh
 let curChat = null;
 function nowTime(){ try{ return new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }catch{ return ""; } }
 function msgHead(who){ return '<div class="mh"><span class="mav '+who+'">'+(who==="user"?'<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2 14.5c0-3 2.7-5 6-5s6 2 6 5z"/></svg>':'<i class="eta-logo"></i>')+'</span><span class="mwho">'+(who==="user"?"You":"Eta")+'</span><span class="mtime">'+nowTime()+'</span></div>'; }
+/* ---- Phase 1 helpers: calm chat (no emoji, smart scroll, copy buttons, file:line links, live status in the card) ---- */
+const EMO_P="(?![\\u00A9\\u00AE\\u2122])[\\p{Extended_Pictographic}\\uFE0E\\uFE0F\\u200D\\u20E3]";
+const EMO_TEST=new RegExp(EMO_P,"u"), EMO_ALL=new RegExp("(?:"+EMO_P+")+ ?","gu");
+function noEmoji(s){
+  s=String(s==null?"":s);
+  if(!EMO_TEST.test(s)) return s;
+  return s.split("\n").map(line=>{
+    if(!EMO_TEST.test(line)) return line;
+    const m=/^(\s*)([\s\S]*)$/.exec(line);
+    return m[1]+m[2].replace(EMO_ALL,"").replace(/ {2,}/g," ");
+  }).join("\n");
+}
+const LS={ get(k){ try{ return localStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch{} } };
+function nearBottom(){ const l=$("chatlog"); return l.scrollHeight-l.scrollTop-l.clientHeight<=60; }
+function hideJump(){ const b=$("jumpbtn"); if(b) b.style.display="none"; }
+function toBottom(){ const l=$("chatlog"); l.scrollTop=l.scrollHeight; hideJump(); }
+function showJump(){
+  let b=$("jumpbtn");
+  if(!b){ b=document.createElement("button"); b.id="jumpbtn"; b.type="button"; b.textContent="New output - jump to bottom"; b.onclick=toBottom; $("right").appendChild(b); }
+  const l=$("chatlog"), r=$("right"); b.style.display="block"; b.style.bottom=Math.max(8, r.clientHeight-(l.offsetTop+l.offsetHeight)+10)+"px";
+}
+// run fn (which adds output), then follow the output only if the reader was already near the bottom
+function keepBottom(fn){ const n=nearBottom(); fn(); if(n) toBottom(); else showJump(); }
+$("chatlog").addEventListener("scroll",()=>{ if(nearBottom()) hideJump(); });
+
+function copyText(text){
+  return new Promise(res=>{
+    const fb=()=>{ try{ const t=document.createElement("textarea"); t.value=text; t.style.cssText="position:fixed;left:-9999px;top:0"; document.body.appendChild(t); t.select(); const ok=document.execCommand("copy"); t.remove(); res(!!ok); }catch{ res(false); } };
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>res(true),fb); else fb(); }catch{ fb(); }
+  });
+}
+function addCopy(host, getText){
+  const b=document.createElement("button"); b.type="button"; b.className="cpbtn"; b.textContent="Copy"; b.title="Copy to clipboard";
+  b.onclick=async(e)=>{ e.stopPropagation(); const ok=await copyText(String(getText()||"")); b.textContent=ok?"Copied":"Copy failed"; clearTimeout(b._t); b._t=setTimeout(()=>{ b.textContent="Copy"; },1500); };
+  host.appendChild(b); return b;
+}
+function decorateCopy(root){ root.querySelectorAll(".cpwrap:not([data-cp])").forEach(w=>{ w.dataset.cp="1"; const p=w.querySelector("pre"); addCopy(w,()=>p?p.textContent:""); }); }
+
+// file:line references in engine text ("src/app.py:42") open the file at that line
+const REF_SRC="(^|[^\\w./\\\\-])((?:[\\w.-]+[\\/\\\\])*[\\w.-]+\\.(?:py|js|mjs|cjs|ts|tsx|jsx|json|html|css|md|java|c|h|cpp|cs|go|rs|rb|php|sh|ps1|ya?ml|toml|txt|sql|vue|svelte)):(\\d{1,6})(?::\\d+)?(?![\\w])";
+async function openRef(f,l){
+  if(EMBED) return openInHost(f,l||0);
+  await openFile(f,true);
+  if(l&&cm){ try{ cm.setCursor(l-1,0); cm.scrollIntoView({line:l-1,ch:0},120); cm.focus(); }catch{} }
+}
+function linkRefs(root){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null); const nodes=[]; let n;
+  while((n=w.nextNode())){ const p=n.parentNode; if(p&&p.closest&&p.closest("a,button,.fref,pre,.codeview")) continue; if(new RegExp(REF_SRC).test(n.nodeValue)) nodes.push(n); }
+  for(const t of nodes){
+    const re=new RegExp(REF_SRC,"g"), s=t.nodeValue, frag=document.createDocumentFragment(); let last=0, m;
+    while((m=re.exec(s))){
+      const start=m.index+m[1].length; frag.appendChild(document.createTextNode(s.slice(last,start)));
+      const sp=document.createElement("span"); sp.className="fref"; sp.setAttribute("role","button"); sp.tabIndex=0; sp.title="Open in editor"; sp.dataset.f=m[2]; sp.dataset.l=m[3]; sp.textContent=s.slice(start,m.index+m[0].length);
+      sp.onclick=()=>openRef(sp.dataset.f,+sp.dataset.l); sp.onkeydown=(e)=>{ if(e.key==="Enter") sp.onclick(); };
+      frag.appendChild(sp); last=m.index+m[0].length;
+    }
+    frag.appendChild(document.createTextNode(s.slice(last))); t.parentNode.replaceChild(frag,t);
+  }
+}
+
 function chatMsg(who, text){
   const em=$("chatlog").querySelector(".chatempty"); if(em) em.remove();
   const m=document.createElement("div"); m.className="msg "+who;
   m.innerHTML=msgHead(who)+'<div class="bubble"></div>';
-  const _b=m.querySelector(".bubble"); if(who==="eta"){ _b.dataset.raw=text||""; _b.innerHTML=mdBlock(text||""); } else _b.textContent=text||"";
-  $("chatlog").appendChild(m); $("chatlog").scrollTop=$("chatlog").scrollHeight;
+  const _b=m.querySelector(".bubble"); if(who==="eta"){ _b.dataset.raw=text||""; _b.innerHTML=mdBlock(noEmoji(text||"")); decorateCopy(_b); linkRefs(_b); } else _b.textContent=text||"";
+  if(who==="user"){ $("chatlog").appendChild(m); toBottom(); } else keepBottom(()=>$("chatlog").appendChild(m));
   return m.querySelector(".bubble");
 }
+const PHASE={planner:"Planning",executor:"Working",reviewer:"Reviewing",memory:"Saving notes",browser:"Opening in browser",regression:"Running project tests",critic:"Checking the work",grounding:"Reading the code",debugger:"Fixing a problem",analyst:"Understanding the task"};
+const LIVE_TYPES=new Set(["start","agent","plan","plan_steps","plan_step","narration","tool","toolResult","gen","filewrite","diff","browser","approval","ask_user","gate","review","answer"]);
+const ui={}; // runId -> {lastRole, planShown, live, ended, role, mphase, perSec, lastOut, written, ctxPct, started, ft}
+function U(id){ return ui[id]||(ui[id]={lastRole:null,planShown:false,live:false,ended:false,role:null,mphase:"",perSec:0,lastOut:0,written:0,ctxPct:0,started:0,ft:null,lastPh:""}); }
+function anyLive(){ for(const k in ui){ if(ui[k].live&&!ui[k].ended) return true; } return false; }
+const fmtT=(s)=>s>=60?Math.floor(s/60)+" min "+(s%60)+" s":s+" s";
+function paintLive(id){
+  paintTools(id);
+  const u=ui[id]; if(!u||!u.ft) return; const now=Date.now();
+  const ph=u.mphase==="waiting"?"Waiting for your OK":(u.mphase==="reading"?"Reading the task":(PHASE[u.role]||"Working"));
+  const parts=[ph, fmtT(Math.max(0,Math.round((now-u.started)/1000)))];
+  if(u.mphase==="writing"&&u.perSec>0) parts.push(u.perSec+" tokens per second");
+  if(u.lastOut) parts.push("last output "+Math.max(0,Math.round((now-u.lastOut)/1000))+" s ago");
+  if(u.ctxPct>=70) parts.push("Memory "+u.ctxPct+"% full");
+  u.ft.querySelector(".wst-t").textContent=parts.join(" - ");
+  if(u.lastPh!==ph){ u.lastPh=ph; u.ft.querySelector(".wst-sr").textContent=ph; } // screen readers hear only phase changes
+}
+let _tick=null;
+function startTick(){ if(_tick) return; _tick=setInterval(()=>{ let any=false; for(const k in ui){ const u=ui[k]; if(u.live&&!u.ended){ any=true; paintLive(k); } } if(!any){ clearInterval(_tick); _tick=null; } },1000); }
+function ensureLive(id){
+  const u=U(id); if(u.live||u.ended) return u;
+  u.live=true; u.started=(runs[id]&&runs[id].started)||Date.now(); if(!u.lastOut) u.lastOut=Date.now();
+  const c=taskCard(id); const f=document.createElement("div"); f.className="wst";
+  f.innerHTML='<span class="tm-dot"></span><span class="wst-t" aria-hidden="true"></span><span class="wst-sr sr" aria-live="polite"></span><button type="button" class="btn g wstop">Stop</button>';
+  keepBottom(()=>c.appendChild(f)); c._ft=f; u.ft=f;
+  const b=f.querySelector(".wstop");
+  b.onclick=()=>{ b.disabled=true; b.textContent="Stopping"; fetch("/api/cancel",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id})}).catch(()=>{ b.disabled=false; b.textContent="Stop"; }); };
+  startTick(); paintLive(id); return u;
+}
+function endLive(id){ const u=U(id); u.ended=true; u.live=false; if(u.ft){ try{ u.ft.remove(); }catch{} u.ft=null; } const c=cards[id]; if(c) c._ft=null; }
+function liveMeter(m){
+  let best=null, bk=null; for(const k in ui){ const u=ui[k]; if(u.live&&!u.ended&&(!best||u.started>=best.started)){ best=u; bk=k; } } if(!best) return;
+  best.mphase=m.phase||""; best.perSec=Number(m.perSec||0); best.ctxPct=Number(m.ctxPct||0);
+  if(Number(m.written||0)>best.written) best.lastOut=Date.now(); best.written=Number(m.written||0);
+  paintLive(bk);
+}
+function detOn(){ return LS.get("eta.details")==="1"; }
+function detLabel(c){ const top=c.querySelector(".wtop"); if(!top) return; top.style.display=c._sec?"":"none"; top.querySelector(".wdet").textContent=(c.classList.contains("nodet")?"Show details":"Hide details")+" ("+(c._sec||0)+")"; }
 function taskCard(id){
   if(cards[id]) return cards[id];
   const em=$("chatlog").querySelector(".chatempty"); if(em) em.remove();
   const m=document.createElement("div"); m.className="msg eta";
-  m.innerHTML=msgHead("eta")+'<div class="work"></div>';
-  $("chatlog").appendChild(m); cards[id]=m.querySelector(".work"); return cards[id];
+  m.innerHTML=msgHead("eta")+'<div class="work"><div class="wtop" style="display:none"><button type="button" class="wdet"></button></div></div>';
+  const w=m.querySelector(".work"); if(!detOn()) w.classList.add("nodet");
+  w.querySelector(".wdet").onclick=()=>{ const off=w.classList.toggle("nodet"); LS.set("eta.details",off?"0":"1"); detLabel(w); };
+  keepBottom(()=>$("chatlog").appendChild(m)); cards[id]=w; return w;
 }
-function wline(id, html, cls){ const c=taskCard(id); const d=document.createElement("div"); if(cls)d.className=cls; d.innerHTML=html; c.appendChild(d); $("chatlog").scrollTop=$("chatlog").scrollHeight; return d; }
+function wline(id, html, cls){
+  const c=taskCard(id); const d=document.createElement("div");
+  if(cls&&(/(^|\s)wtool(\s|$)/.test(cls)||cls==="wgate ok")) cls+=" sec";
+  if(cls) d.className=cls;
+  d.innerHTML=noEmoji(html);
+  keepBottom(()=>c.insertBefore(d,c._ft||null));
+  if(cls&&/(^|\s)sec(\s|$)/.test(cls)){ c._sec=(c._sec||0)+1; detLabel(c); }
+  if(cls&&/(^|\s)(wsay|wans|werr|wrev)(\s|$)/.test(cls)) linkRefs(d);
+  if(cls&&/(^|\s)wans(\s|$)/.test(cls)&&html){ const ft=document.createElement("div"); ft.className="ansft"; const tm=document.createElement("span"); tm.textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); const cp=document.createElement("button"); cp.type="button"; cp.className="anscopy"; cp.textContent="Copy"; cp.onclick=()=>{ const t=(d.innerText||"").replace(/\s*Copy\s*$/,""); try{ navigator.clipboard.writeText(t).then(()=>{cp.textContent="Copied"; setTimeout(()=>cp.textContent="Copy",1500);},()=>{cp.textContent="Not copied";}); }catch(e){ cp.textContent="Not copied"; } }; ft.appendChild(tm); ft.appendChild(cp); d.appendChild(ft); }
+  return d;
+}
 // light markdown for the agent's live narration (bold / `code` / _italic_ / newlines)
 // ---- in-page confirm/alert -------------------------------------------------------------
 // Native confirm()/alert() are SILENTLY IGNORED inside VS Code's sandboxed webview
@@ -1731,7 +2034,7 @@ function mdBlock(src){
   const flush=()=>{ if(para.length){ out.push('<p class="mdp">'+para.map(mdInline).join("<br>")+"</p>"); para=[]; } };
   while(i<lines.length){
     const L=lines[i];
-    if(/^\s*\x60\x60\x60/.test(L)){ flush(); const buf=[]; i++; while(i<lines.length&&!/^\s*\x60\x60\x60/.test(lines[i])){ buf.push(lines[i]); i++; } i++; out.push('<pre class="mdpre"><code>'+esc(buf.join("\n"))+"</code></pre>"); continue; }
+    if(/^\s*\x60\x60\x60/.test(L)){ flush(); const buf=[]; i++; while(i<lines.length&&!/^\s*\x60\x60\x60/.test(lines[i])){ buf.push(lines[i]); i++; } i++; out.push('<div class="cpwrap"><pre class="mdpre"><code>'+esc(buf.join("\n"))+"</code></pre></div>"); continue; }
     let m;
     if((m=L.match(/^\s{0,3}(#{1,6})\s+(.*)$/))){ flush(); out.push('<div class="mdh">'+mdInline(m[2])+"</div>"); i++; continue; }
     if(/^\s*[-*\u2022]\s+/.test(L)){ flush(); const items=[]; while(i<lines.length&&/^\s*[-*\u2022]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-*\u2022]\s+/,"")); i++; } out.push('<ul class="mdl">'+items.map(x=>"<li>"+mdInline(x)+"</li>").join("")+"</ul>"); continue; }
@@ -1747,74 +2050,170 @@ const cmdBlocks={};
 // then repeat the exact same failures in a "Finished with unresolved issues" box. Saying it
 // twice made the panel a wall of duplicate text.
 const honestShown={};
-function cmdBlock(id, cmd){
+function cmdBlock(id, cmd, m){
   const d=wline(id,'','cmdblk');
-  d.innerHTML='<div class="cmdhead"><span class="cmdp">IN</span><span class="cmdc"></span><span class="cmdbadge run">running…</span></div><pre class="cmdout"></pre>';
+  d.innerHTML='<div class="cmdhead"><span class="cmdp">IN</span><span class="cmdc"></span><span class="cmdbadge run">running</span></div><pre class="cmdout"></pre>';
   d.querySelector(".cmdc").textContent=cmd||"(command)";
-  cmdBlocks[id]=d; return d;
+  addCopy(d.querySelector(".cmdhead"),()=>{ const o=d.querySelector(".cmdout").textContent.trim(); return o?(cmd||"")+"\n"+o:(cmd||""); });
+  cmdBlocks[id]=d; d._cmd=true; d._t0=(m&&m.ts)||Date.now();
+  if(m&&m.callId!=null) cmdBlocks[id+"|"+m.callId]=d;
+  TO(id).open.add(d); paintTools(id);
+  return d;
 }
-function fillCmdBlock(id, r){
-  let d=cmdBlocks[id]; if(!d) d=cmdBlock(id,"(command)"); cmdBlocks[id]=null;
-  const blocked=/STOP —/.test(r), failed=/COMMAND FAILED/.test(r);
+function fillCmdBlock(id, r, m){
+  m=m||{}; const cid=m.callId; let d;
+  if(cid!=null){ d=cmdBlocks[id+"|"+cid]||null; delete cmdBlocks[id+"|"+cid]; } else d=cmdBlocks[id];
+  if(!d) d=cmdBlock(id,"(command)");
+  if(cmdBlocks[id]===d) cmdBlocks[id]=null;
+  TO(id).open.delete(d);
+  const blocked=/STOP —/.test(r), failed=/COMMAND FAILED/.test(r)||m.ok===false;
   const badge=d.querySelector(".cmdbadge"); const pre=d.querySelector(".cmdout");
   badge.className="cmdbadge "+((blocked||failed)?"no":"ok");
-  badge.textContent=blocked?"blocked":failed?"failed":"ok";
-  if(blocked){ pre.textContent="🛑 repeat-failure blocked — redirected to fix the root cause instead of retrying"; pre.classList.add("show"); return; }
+  badge.textContent=(blocked?"blocked":failed?"failed":"ok")+(m.ms!=null?" - "+fmtMs(m.ms):"");
+  if(blocked){ pre.textContent="Blocked: the same command failed before. Eta will fix the cause instead of trying again."; pre.classList.add("show"); return; }
   // strip our synthetic COMMAND FAILED preamble so real program output shows through
   const out=r.replace(/^⚠ COMMAND FAILED[^\n]*\n?/,"").trim();
   if(out){ const lines=out.split("\n"); const tail=lines.slice(-14).join("\n");
     pre.textContent=(lines.length>14?"… "+(lines.length-14)+" earlier line(s)\n":"")+tail; pre.classList.add("show"); }
-  $("chatlog").scrollTop=$("chatlog").scrollHeight;
 }
+/* ---- Phase 2: one compact block per tool call. The engine sends callId, ms, ok and a short redacted
+   summary; old saved runs have none of these, so their results pair first-in-first-out by tool name and
+   show no duration (never a made-up one). All text goes in through esc() or textContent. ---- */
+const toolOpen={}; // runId -> {open:Set(block), byId:{callId:block}, byName:{name:[block]}}
+function TO(id){ return toolOpen[id]||(toolOpen[id]={open:new Set(),byId:{},byName:{}}); }
+function fmtMs(ms){ ms=Math.max(0,Math.round(+ms||0)); if(ms<1000) return ms+" ms"; const s=ms/1000; return s<10?s.toFixed(1)+" s":(s<60?Math.round(s)+" s":fmtT(Math.round(s))); }
+const TVERB={read_file:"read",search:"grep",list_dir:"list",ask_codebase:"ask kb",check_page:"open",edit_file:"edit",write_file:"write",run_tests:"test"};
+const TOOL_FAIL=/^\s*(?:⚠|VETOED\b|BLOCKED\b|STOP\b|COMMAND FAILED\b|Error\b|ERROR\b|Edit failed\b|No SEARCH\/REPLACE\b|No change produced\b|Could not\b)/;
+function toolTarget(name,a){
+  a=a||{}; const j=(v)=>Array.isArray(v)?v.join(", "):String(v==null?"":v);
+  if(name==="read_file") return j(a.path)+((a.start_line||a.end_line)?" · "+(a.start_line||1)+"–"+(a.end_line||"end"):"");
+  if(name==="search") return j(a.query).slice(0,80);
+  if(name==="list_dir") return j(a.path||".");
+  if(name==="ask_codebase") return j(a.question).slice(0,80);
+  return j(a.path||a.command||a.query||a.question||a.url||"").slice(0,90);
+}
+function paintTools(id){
+  const o=toolOpen[id]; if(!o||!o.open.size) return; const now=Date.now();
+  for(const d of o.open){ const s="running "+fmtT(Math.max(0,Math.round((now-d._t0)/1000)));
+    if(d._cmd){ const b=d.querySelector(".cmdbadge.run"); if(b) b.textContent=s; } else { const t=d.querySelector(".tst"); if(t) t.textContent=s; } }
+}
+function toolBlock(id, m, replay){
+  const d=wline(id,'',"wtool tblk st-run"+(m.name==="read_file"?" tread":""));
+  d.innerHTML='<button type="button" class="tbh" aria-expanded="false" disabled><span class="tv">'+esc(TVERB[m.name]||m.name||"tool")+'</span><span class="ttg">'+esc(noEmoji(toolTarget(m.name,m.args)))+'</span><span class="tst"></span><span class="tone"></span></button><pre class="tbr"></pre>';
+  d._t0=m.ts||Date.now(); d._name=m.name;
+  d.querySelector(".tst").textContent=replay?"running":"running 0 s";
+  const o=TO(id); o.open.add(d);
+  if(m.callId!=null) o.byId[m.callId]=d; else (o.byName[m.name]||(o.byName[m.name]=[])).push(d);
+  return d;
+}
+function takeTool(id, m){
+  const o=TO(id), r=String(m.result||""); let d=null;
+  if(m.callId!=null){ d=o.byId[m.callId]||null; delete o.byId[m.callId]; }
+  else if(!/^(VETOED|BLOCKED)\b/.test(r)){ const q=o.byName[m.name]; d=(q&&q.shift())||null; } // a vetoed call never had a start
+  if(d) o.open.delete(d);
+  return d;
+}
+function shortSum(name, r){ const all=String(r||"").replace(/\r/g,"").split("\n").filter(l=>l.trim()); let s=(name==="run_command"?all.slice(-6):all.slice(0,6)).join("\n"); return s.length>400?s.slice(0,399)+"…":s; }
+function finishTool(id, d, m, oneLine){
+  const r=String(m.result||""), ok=m.ok!=null?!!m.ok:!TOOL_FAIL.test(r);
+  const sum=noEmoji(m.summary!=null?String(m.summary):shortSum(m.name,r));
+  d.classList.remove("st-run"); d.classList.add(ok?"st-ok":"st-no");
+  d.querySelector(".tst").textContent=m.noStart?"not run":(m.ms!=null?fmtMs(m.ms):"");
+  const one=d.querySelector(".tone"); one.textContent=oneLine!=null?oneLine:(sum.split("\n")[0]||"");
+  if(!ok){ const f=document.createElement("span"); f.className="tfail"; f.textContent="failed"; one.parentNode.insertBefore(f,one);
+    // a failed call is shown even when details are hidden
+    if(d.classList.contains("sec")){ d.classList.remove("sec"); const c=cards[id]; if(c){ c._sec=Math.max(0,(c._sec||0)-1); detLabel(c); } } }
+  const pre=d.querySelector(".tbr"), btn=d.querySelector(".tbh"); pre.textContent=sum;
+  if(sum){ btn.disabled=false; btn.title="Show the short result"; btn.onclick=()=>{ const o=d.classList.toggle("open"); btn.setAttribute("aria-expanded",o?"true":"false"); }; }
+}
+function closeOpenTools(id){ // the run ended: nothing is running any more
+  const o=toolOpen[id]; if(!o) return;
+  for(const d of o.open){ if(d._cmd){ const b=d.querySelector(".cmdbadge.run"); if(b){ b.className="cmdbadge no"; b.textContent="no result"; } } else { d.classList.remove("st-run"); const t=d.querySelector(".tst"); if(t) t.textContent="no result"; } }
+  o.open.clear(); o.byId={}; o.byName={};
+}
+/* ---- Phase 2: the plan as a list with live status per step (from plan_steps / plan_step events) ---- */
+const PST={pending:"waiting",working:"working",done:"done",failed:"failed",stopped:"stopped"};
+function planOl(id){
+  const u=U(id); if(u.planOl) return u.planOl;
+  if(!u.planEl){ u.planEl=wline(id,'',"wplan"); u.planShown=true; }
+  u.planEl.textContent=""; const ol=document.createElement("ol"); ol.className="wplist"; u.planEl.appendChild(ol); u.planOl=ol; return ol;
+}
+function planRow(ol, text){ const li=document.createElement("li"); li.dataset.s="pending"; const st=document.createElement("span"); st.className="pst"; st.textContent=PST.pending; const tx=document.createElement("span"); tx.className="ptx"; tx.textContent=noEmoji(String(text==null?"":text)); li.append(st,tx); ol.appendChild(li); return li; }
+function planRows(id, steps){ const ol=planOl(id); ol.textContent=""; for(const s of steps) planRow(ol,s); return ol; }
+function setStep(li, s){ if(!li) return; s=PST[s]?s:"pending"; li.dataset.s=s; li.querySelector(".pst").textContent=PST[s]; if(s==="working") li.setAttribute("aria-current","step"); else li.removeAttribute("aria-current"); }
+function endPlan(id){ const ol=ui[id]&&ui[id].planOl; if(!ol) return; ol.querySelectorAll('li[data-s="working"]').forEach(li=>setStep(li,"stopped")); }
 function mine(id){ return cards[id] || (runs[id] && runs[id].started >= pageLoad - 3000); }
 const proof={}; // per-run verification tally → rendered as the Proof receipt on done
 function taskEvent(m, replay){
   const id=m.runId; if(!replay && !mine(id)) return;
+  const U0=U(id);
+  if(!replay){ U0.lastOut=Date.now(); if(LIVE_TYPES.has(m.type)) ensureLive(id); }
   const P0=proof[id]||(proof[id]={g:0,gn:0,b:0,bn:0,c:0,cf:0,bl:0,k:0});
   if(m.type==="gate"){ m.ok?P0.g++:P0.gn++; if(!replay) tlPush("Gatekeeper",(m.ok?"✓ ":"✗ ")+m.file); }
   else if(m.type==="browser"){ m.ok?P0.b++:P0.bn++; if(!replay) tlPush("Browser",(m.ok?"✓ ":"✗ ")+m.file); }
   else if(m.type==="toolResult"&&m.name==="run_command"){ const r0=String(m.result||""); if(/STOP —/.test(r0)) P0.bl++; else { P0.c++; if(/COMMAND FAILED/.test(r0)) P0.cf++; } }
   else if(m.type==="toolResult"&&m.name==="ask_codebase"){ P0.k++; if(!replay) tlPush("Knowledge","consulted the knowledge base"); }
   if(m.type==="plan"){ lastPlan={text:m.text,runId:id,done:false}; if(rtab==="plan") renderPlan(); }
-  if(m.type==="agent"){ agentState.role=m.role; agentState.running=true; if(rtab==="agents") renderAgents(); }
+  if(m.type==="agent"){ agentState.role=m.role; agentState.running=true; agRecord(id,m.role,m.ts,replay); if(rtab==="agents") renderAgents(); }
   if(m.type==="tool"&&!replay&&m.name!=="finish"){ const a=m.args||{}; tlPush(ROLEN[agentState.role]||"Agent",(m.name||"")+(a.path?" "+a.path:(a.command?" "+String(a.command).slice(0,36):""))); }
   if(m.type==="review"&&!replay) tlPush("Reviewer",m.approved?"approved the work":"sent it back for fixes");
   if(m.type==="done"||m.type==="error"||m.type==="cancelled"){
-    agentState.running=false; agentState.role=null;
+    endLive(id); closeOpenTools(id); endPlan(id);
+    agentState.running=false; agentState.role=null; agEnd(id,m.ts);
     if(lastPlan.runId===id) lastPlan.done=(m.type==="done");
     if(rtab==="plan") renderPlan(); else if(rtab==="agents") renderAgents();
-    if(!replay&&m.type==="done") tlPush("Done","run finished — proof recorded");
+    if(!replay&&m.type==="done") tlPush(m.status==="not-done"?"Not done":"Done",m.status==="not-done"?String(m.verdict||"tests do not pass"):"run finished — proof recorded");
   }
-  if(replay && m.type==="approval"){ wline(id,"(approval request — expired after restart)","res"); return; }
-  if(replay && m.type==="ask_user"){ wline(id,"(clarifying question — expired after restart)","res"); return; }
-  if(m.type==="agent"){ const t={planner:"Planning",executor:"Working",reviewer:"Reviewing",memory:"Remembering",browser:"Opening in browser",regression:"Running project tests",critic:"Verifier (checking)",grounding:"Grounding",debugger:"Debugging",analyst:"Understanding the logic"}[m.role]||m.role; wline(id,esc(t),"whead "+m.role); }
+  if(replay && m.type==="approval"){ fetch("/api/approval-open?id="+encodeURIComponent(m.id||"")).then(r=>r.json()).then(j=>{ if(j&&j.open) taskEvent(m,false); }).catch(()=>{}); return; }
+  if(replay && m.type==="ask_user"){ return; }
+  if(m.type==="agent"){ U0.role=m.role; if(U0.lastRole===m.role) return; U0.lastRole=m.role; const t={planner:"Planning",executor:"Working",reviewer:"Reviewing",memory:"Saving notes",browser:"Opening in browser",regression:"Running project tests",critic:"Checking the work",grounding:"Reading the code",debugger:"Debugging",analyst:"Understanding the task"}[m.role]||""; if(!t) return; wline(id,esc(t),"whead "+m.role); }
   else if(m.type==="browser"){
     const d=wline(id,(m.ok?"✓ "+esc(m.file)+" — page loads, console clean":"✗ "+esc(m.file)+" — real browser errors:\n"+(m.errors||[]).map(esc).join("\n")),"wrev "+(m.ok?"ok":"no"));
     if(m.shot){ const img=document.createElement("img"); img.className="wshot"; img.src="/api/shot?ws="+encodeURIComponent(WS)+"&p="+encodeURIComponent(m.shot); img.title="click to open full size"; img.onclick=()=>window.open(img.src,"_blank"); d.appendChild(img); }
   }
-  else if(m.type==="plan"){ wline(id,esc(m.text),"wplan"); }
-  else if(m.type==="narration"){ const b=m.track==="grounding"?'<span class="trk trk-g">🔍 grounding</span> ':(m.track==="doing"?'<span class="trk trk-d">⚙️ doing</span> ':''); wline(id, b+sayFmt(m.text), "wsay"+(m.track?" say-"+m.track:"")); }
+  else if(m.type==="plan"){
+    // a second plan event (the plan was edited) replaces the first block in place: the plan is shown once
+    if(Array.isArray(m.steps)&&m.steps.length) planRows(id, m.steps);
+    else if(U0.planEl){ U0.planOl=null; U0.planEl.textContent=noEmoji(String(m.text||"")); }
+    else { U0.planEl=wline(id,esc(m.text),"wplan"); }
+    U0.planShown=true; }
+  else if(m.type==="plan_steps"){ const ol=planRows(id, Array.isArray(m.steps)?m.steps:[]); ol.classList.add("haslive"); for(const i of (m.done||[])) setStep(ol.children[i],"done"); }
+  else if(m.type==="plan_step"){ const ol=planOl(id); ol.classList.add("haslive"); const i=Math.max(0,+m.index||0);
+    while(ol.children.length<=i) planRow(ol, ol.children.length===i?(m.text||""):"");
+    setStep(ol.children[i], m.status); }
+  else if(m.type==="narration"){
+    let tx=String(m.text||"");
+    // the plan is already drawn once as the plan block; do not say it a second time as narration
+    if(U0.planShown){ const mm=/^Here's (?:my plan|the approach)[^\n]*\n[\s\S]*?(?:\n\n([\s\S]*))?$/.exec(tx); if(mm) tx=(mm[1]||"").trim(); }
+    tx=tx.replace(/^(\W*Step done)\s*[—-][\s\S]*$/,"$1"); // the plan list already shows the step; the summary was repeated again in the final answer
+    if(tx){ const b=""; wline(id, b+sayFmt(tx), "wsay"+(m.track?" say-"+m.track:"")); } }
   else if(m.type==="tool"){ const a=m.args||{};
-    if(m.name==="run_command"){ cmdBlock(id, a.command||""); }
-    else if(m.name==="read_file"){ const rng=(a.start_line||a.end_line)?(" · "+(a.start_line||1)+"–"+(a.end_line||"end")):""; wline(id,'<span class="tv">read</span>'+esc(a.path||"")+rng,"wtool tread"); }
-    else if(m.name==="write_file"){ /* the diff / filewrite card already shows this edit — no duplicate row */ }
-    else if(m.name==="search"){ wline(id,'<span class="tv">grep</span>'+esc(String(a.query||"").slice(0,80)),"wtool"); }
-    else if(m.name==="list_dir"){ wline(id,'<span class="tv">list</span>'+esc(a.path||"."),"wtool"); }
-    else if(m.name==="ask_codebase"){ wline(id,'<span class="tv">ask kb</span>'+esc(String(a.question||"").slice(0,80)),"wtool"); }
-    else if(m.name==="check_page"){ wline(id,'<span class="tv">open</span>'+esc(a.path||""),"wtool"); }
-    else { const k=a.path||a.command||a.query||a.question||""; wline(id,esc(m.name)+(k?" — "+esc(String(k).slice(0,90)):""),"wtool"); }
+    if(m.name==="run_command"){ cmdBlock(id, a.command||"", m); }
+    else if(m.name==="write_file"){ /* the diff / filewrite card already shows this edit — no row; only a FAILED write gets a block (below) */
+      const o=TO(id); const ph={_ph:true,args:a}; if(m.callId!=null) o.byId[m.callId]=ph; else (o.byName[m.name]||(o.byName[m.name]=[])).push(ph); }
+    else toolBlock(id, m, replay);
   }
   else if(m.type==="gate"){ wline(id,(m.ok?"✓ ":"✗ ")+esc(m.file)+" — "+esc(m.msg),"wgate "+(m.ok?"ok":"no")); }
-  else if(m.type==="review"){ wline(id,(m.approved?"✓ Looks good":"↻ Improving: "+esc((m.feedback||"").split("\n").slice(0,3).join(" ").slice(0,170))),"wrev "+(m.approved?"ok":"no")); }
+  else if(m.type==="review"){ wline(id,(m.approved?"✓ Looks good":"Improving: "+esc((m.feedback||"").split("\n").slice(0,3).join(" ").slice(0,170))),"wrev "+(m.approved?"ok":"no")); }
   else if(m.type==="answer"){ if(m.honest) honestShown[id]=true; wline(id,sayFmt(m.text),"wans"+(m.honest?" wans-honest":"")); }
-  else if(m.type==="error"){ wline(id,"⚠ "+esc(m.text),"werr"); }
+  else if(m.type==="error"){ wline(id,"Problem: "+esc(m.text),"werr"); }
   else if(m.type==="cancelled"){ wline(id,"■ cancelled","werr"); }
-  else if(m.type==="snapshot"){ wline(id,"⎇ snapshot "+esc(m.hash)+" saved — this run can be reverted","wgate ok"); }
-  else if(m.type==="regression"){ wline(id,"⚠ REGRESSION: "+esc(m.text)+(m.detail?"\n"+esc(m.detail.slice(0,400)):""),"wrev no"); }
+  else if(m.type==="snapshot"){ wline(id,"Snapshot "+esc(m.hash)+" saved. This run can be reverted.","wgate ok"); }
+  else if(m.type==="regression"){ wline(id,"REGRESSION: "+esc(m.text)+(m.detail?"\n"+esc(m.detail.slice(0,400)):""),"wrev no"); if(proofHosts[id]) showProof(id,proofHosts[id]); }
   else if(m.type==="toolResult"){
     const r=String(m.result||"");
-    if(m.name==="run_command") fillCmdBlock(id, r);
-    else if(m.name==="ask_codebase"){ const s=(r.match(/\[source:\s*([^\]]+)\]/)||[])[1]; wline(id,"📚 knowledge consulted"+(s?" · "+esc(s.slice(0,60)):"")+(/possibly incomplete/.test(r)?" · ⚠ flagged partial":""),"wtool"); }
+    if(m.name==="run_command") fillCmdBlock(id, r, m);
+    else {
+      let d=takeTool(id, m), args={}; const ok=m.ok!=null?!!m.ok:!TOOL_FAIL.test(r);
+      if(d&&d._ph){ args=d.args||{}; d=null; } else if(!d&&m.args) args=m.args;
+      if(m.name==="write_file"&&ok&&!d){ /* success is shown by the diff card */ }
+      else {
+        if(!d){ // a result without a shown start (vetoed or blocked before it ran, or a failed write): one finished block
+          d=toolBlock(id, {name:m.name, args, ts:m.ts}, true); const o=TO(id); o.open.delete(d); const q=o.byName[m.name]; if(q) q.pop(); }
+        let one=null; if(m.name==="ask_codebase"){ const s=(r.match(/\[source:\s*([^\]]+)\]/)||[])[1]; one="Knowledge consulted"+(s?" · "+s.slice(0,60):"")+(/possibly incomplete/.test(r)?" · flagged partial":""); }
+        finishTool(id, d, m, one);
+      }
+    }
   }
   else if(m.type==="gen"){ const g=genBlock(id,m.file); g.pre.textContent+=m.delta; g.pre.scrollTop=g.pre.scrollHeight; }
   else if(m.type==="genEnd"){ const g=genBlocks[id+"|"+m.file]; if(g) g.head.querySelector("span:last-child").textContent="finalizing…"; }
@@ -1822,10 +2221,10 @@ function taskEvent(m, replay){
     dropGen(id,m.file);
     const lines=(m.content||"").split("\n"); const CUT=14;
     const d=wline(id,'','fcard');
-    d.innerHTML=fileCardHead(m.file,'<span class="badd">＋ created · '+m.lines+' lines</span>',true)
+    d.innerHTML=fileCardHead(m.file,'<span class="badd">＋ created · '+m.lines+(m.lines===1?' line':' lines')+'</span>',true)
       +'<pre class="codeview">'+lines.map((l,i)=>'<span class="cl'+(i>=CUT?' hid':'')+'">'+esc(l)+'</span>').join("\n")+'</pre>'
       +(lines.length>CUT?'<span class="showmore">show all '+m.lines+' lines ▾</span>':'');
-    wireFileCard(d);
+    d.dataset.file=m.file||""; wireFileCard(d);
   }
   else if(m.type==="diff"){
     dropGen(id,m.file);
@@ -1833,33 +2232,121 @@ function taskEvent(m, replay){
     const row=(t,cls)=>{ n++; return '<span class="dl '+cls+(n>CUT?' hid':'')+'">'+esc(t)+'</span>'; };
     const body=(m.removed||[]).map(l=>row("- "+l,"rem")).concat((m.added||[]).map(l=>row("+ "+l,"add"))).join("\n");
     const d=wline(id,'','fcard');
-    d.innerHTML=fileCardHead(m.file,'<span class="badd">+'+(m.addedTotal||0)+'</span> <span class="brem">−'+(m.removedTotal||0)+'</span><span style="color:var(--txt3)">from line '+(m.start||1)+'</span>',true)
+    d.innerHTML=fileCardHead(m.file,'<span class="badd">+'+(m.addedTotal||0)+'</span> <span class="brem">−'+(m.removedTotal||0)+'</span><span style="color:var(--txt3)">from line '+(m.start||1)+'</span>',true,m.start||1)
       +'<pre class="codeview">'+ (body||'<span class="cl">(no line changes)</span>') +'</pre>'
       +(n>CUT?'<span class="showmore">show all '+n+' changed lines ▾</span>':'');
-    wireFileCard(d);
+    d.dataset.file=m.file||""; wireFileCard(d);
   }
-  else if(m.type==="done"){ const f=(runs[id]&&runs[id].files)||[]; wline(id,"Done"+(f.length?" — <b>"+f.map(esc).join(", ")+"</b>":""),"wdone");
-    if(m.warnings&&m.warnings.length&&!honestShown[id]) wline(id,"⚠ Finished with unresolved issues — please review:\n"+m.warnings.map(esc).join("\n"),"wrev no");
+  else if(m.type==="edit"){ editBar(id,m); }
+  else if(m.type==="edit_status"){ editStatus(m.editId,m.status,m.how); }
+  else if(m.type==="done"){ const f=(runs[id]&&runs[id].files)||[]; wline(id,(m.status==="not-done"?"Not done: "+esc(m.verdict||"the tests do not pass"):"Done")+(f.length?" — <b>"+f.map(esc).join(", ")+"</b>":""),m.status==="not-done"?"wdone no":"wdone");
+    if(m.warnings&&m.warnings.length&&!honestShown[id]) wline(id,"Finished with unresolved issues. Please review:\n"+m.warnings.map(esc).join("\n"),"wrev no");
     // Honest completion note (NOT a failure): optional cloud is a bonus, never required.
-    if(m.suggestion) wline(id,"💡 "+esc(m.suggestion),"wrev");
-    // Proof line shows ONLY when something failed (keeps clean runs uncluttered);
+    if(m.suggestion) wline(id,esc(m.suggestion),"wrev");
+    // Proof line shows ONLY when the run ended with unresolved issues (2026-11-15 round 2: a gate that failed once and was repaired no longer shows a red X next to Done; the Proof card below still lists tests and files);
     // on success the green "Done" line is enough.
     { const P=proof[id]||{}; const bad=(P.gn||0)+(P.bn||0)+(P.cf||0)+((m.warnings||[]).length);
-      if(bad) wline(id,'<span class="pk">Proof</span> — gates '+(P.g||0)+'✓'+(P.gn?' <b>'+P.gn+'✗</b>':'')
+      if(bad&&(m.warnings||[]).length) wline(id,'<span class="pk">Proof</span> — gates '+(P.g||0)+'✓'+(P.gn?' <b>'+P.gn+'✗</b>':'')
         +' · browser '+(P.b||0)+'✓'+(P.bn?' <b>'+P.bn+'✗</b>':'')
         +' · commands '+(P.c||0)+(P.cf?' (<b>'+P.cf+' failed</b>)':'')
         +(P.bl?' · '+P.bl+' repeat-failure blocked':'')
         +(P.k?' · '+P.k+' knowledge lookup'+(P.k>1?'s':''):''),
         "wproof"); }
-    { const d=wline(id,'<button class="btn g wwt">📄 View walkthrough</button>',""); d.querySelector("button").onclick=()=>window.open("/api/walkthrough?format=html&id="+id,"_blank"); }
-    if(m.canRevert){ const d=wline(id,'<button class="btn g">↩ Revert this run</button>',""); d.querySelector("button").onclick=async(ev)=>{
-      if(!(await uiConfirm("Undo ALL file changes from this run (restore the snapshot)?","Revert","Cancel"))) return;
-      ev.target.disabled=true;
-      const r=await(await fetch("/api/revert",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id})})).json();
-      if(r.error){ uiAlert(r.error); ev.target.disabled=false; }
-    }; } }
+    { const pc=wline(id,'<div class="hkdim">Loading the proof card…</div>',"proofcard hkbox"); showProof(id,pc); pc.style.display="none"; proofCardEl[id]=pc; }
+    { const row=wline(id,(m.canRevert?'<button type="button" class="btn g wrv">Review changes</button><button type="button" class="btn g wmore" aria-expanded="false">More</button><span class="wmorebox" style="display:none"><button type="button" class="btn g wwt">View walkthrough</button><button type="button" class="btn g wsv">Go back to a step</button><button type="button" class="btn g wrt">Revert this run</button></span>':'<button type="button" class="btn g wwt">View walkthrough</button>'),"wactions");
+      const out=wline(id,'',"wactout");
+      row.querySelector(".wwt").onclick=()=>window.open("/api/walkthrough?format=html&id="+id,"_blank");
+      { const mb=row.querySelector(".wmore"); if(mb) mb.onclick=()=>{ const bx=row.querySelector(".wmorebox"), open=bx.style.display==="none"; bx.style.display=open?"inline":"none"; mb.setAttribute("aria-expanded",open?"true":"false"); mb.textContent=open?"Less":"More"; const pcx=proofCardEl[id]; if(pcx) pcx.style.display=open?"":"none"; }; }
+      if(m.canRevert){ row.querySelector(".wrv").onclick=()=>reviewChanges(id,out); const sv=out; row.querySelector(".wsv").onclick=()=>showSteps(id,sv); row.querySelector(".wrt").onclick=(ev)=>undoRun(id,ev.target); } } }
   else if(m.type==="approval"){ const d=wline(id,'<b>Approve: '+esc(m.title)+'</b><pre>'+esc(m.detail)+'</pre><button class="btn" data-ok="1">Approve</button> <button class="btn g" data-ok="0">Reject</button>',"wappr"); d.querySelectorAll("button").forEach(b=>b.onclick=()=>{ fetch("/api/approve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:m.id,ok:b.dataset.ok==="1"})}); d.querySelectorAll("button").forEach(x=>x.disabled=true); }); }
   else if(m.type==="ask_user"){ const opts=(m.options||[]); const btns=opts.map((o,i)=>'<button class="btn'+(i?" g":"")+'" data-i="'+i+'">'+esc(o)+'</button>').join(" "); const d=wline(id,'<b>❓ '+esc(m.question)+'</b><div style="margin-top:6px">'+btns+'</div>',"wappr"); d.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const ans=opts[+b.dataset.i]; fetch("/api/ask-user-answer",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:m.id,answer:ans})}); d.querySelectorAll("button").forEach(x=>x.disabled=true); }); }
+}
+
+/* Whole-run undo (the "Revert this run" button and the proof card's Undo button): restore the run's snapshot. */
+async function undoRun(id, btn){
+  if(!(await uiConfirm("Undo ALL file changes from this run (restore the snapshot)?","Revert","Cancel"))) return;
+  btn.disabled=true;
+  let r; try{ r=await(await fetch("/api/revert",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id})})).json(); }catch(e){ r={error:"Could not reach the engine."}; }
+  if(r.error){ uiAlert(r.error); btn.disabled=false; }
+}
+
+/* Proof card: after a run, what the run really recorded: tests, files changed, undo, and whether anything left this PC. */
+const proofHosts={}; const proofCardEl={};
+async function showProof(id, host){
+  proofHosts[id]=host;
+  let r; try{ r=await(await fetch("/api/proof?runId="+encodeURIComponent(id))).json(); }catch(e){ r={error:"Could not reach the engine."}; }
+  if(r.error||r.ok===false){ host.innerHTML='<div class="hkdim">Proof card: '+esc(r.error||"could not load it.")+'</div>'; return; }
+  const T=r.tests||{}, F=r.files||{}, U=r.undo||{}, P=r.privacy||{}, list=F.list||[];
+  const tMark=T.status==="passed"?"✓":T.status==="failed"?"✗":"–", pMark=P.local===true?"✓":P.local===false?"⚠":"?";
+  const rows=list.slice(0,12).map(f=>'<div class="hkdim">'+esc(f.file)+(f.counted?' <span class="badd">+'+(f.added||0)+'</span> <span class="brem">−'+(f.removed||0)+'</span>':'')+(f.status==="added"||f.status==="deleted"?' · '+esc(f.status):'')+'</div>').join("")
+    +(list.length>12?'<div class="hkdim">… and '+(list.length-12)+' more</div>':'');
+  host.innerHTML='<div class="hkhead"><span><b>Proof card</b></span></div>'
+    +'<div class="pc-tests">'+tMark+' '+esc(T.text||"")+'</div>'
+    +'<div class="pc-files">'+esc(F.text||"")+'</div>'+rows
+    +'<div class="pc-net">'+pMark+' '+esc(P.text||"")+'</div>'
+    +(U.available?'<div><button class="btn g">Undo this run</button></div>':'<div class="hkdim">'+esc(U.text||"")+'</div>');
+  const b=host.querySelector("button"); if(b) b.onclick=(ev)=>undoRun(id,ev.target);
+}
+
+/* B3: go back to any step of a finished run. The engine saves a step after each file write or edit. */
+async function showSteps(id, host){
+  let box=host.querySelector(".stepbox"); if(!box){ box=document.createElement("div"); box.className="stepbox hkbox"; host.appendChild(box); }
+  box.innerHTML='<div class="hkdim">Loading the steps…</div>';
+  let r; try{ r=await(await fetch("/api/run-steps?runId="+encodeURIComponent(id))).json(); }catch(e){ r={error:"Could not reach the engine."}; }
+  if(r.error||r.ok===false){ box.innerHTML='<div class="hkdim">'+esc(r.error||"Could not load the steps.")+'</div>'; return; }
+  const steps=r.steps||[];
+  if(steps.length<2){ box.innerHTML='<div class="hkdim">This run has no steps to go back to.</div>'; return; }
+  if(!r.canRewind){ box.innerHTML='<div class="hkdim">This run cannot be rewound (it is still working, or it ran on its own branch).</div>'; return; }
+  box.innerHTML='<div class="hkdim">Go back to the files as they were after this step. New files made later are removed. Your present state is saved as a step first, so you can come back.</div>';
+  for(const s of steps){
+    const row=document.createElement("div"); row.className="hk";
+    const what=s.n===0?"Start of the run":(s.label||((s.tool==="write_file"?"wrote ":"edited ")+(s.file||"a file")));
+    const when=s.ts?new Date(s.ts).toLocaleTimeString():"";
+    row.innerHTML='<div class="hkhead"><span>'+(s.n===0?"":"Step "+esc(String(s.n))+" · ")+esc(what)+(when?' <span class="hkdim">'+esc(when)+'</span>':"")+'</span><button class="btn g">Go back to here</button></div>';
+    row.querySelector("button").onclick=async(ev)=>{
+      if(!(await uiConfirm("Restore the files to "+(s.n===0?"the start of the run":"step "+s.n)+"?","Go back","Cancel"))) return;
+      ev.target.disabled=true;
+      let x; try{ x=await(await fetch("/api/rewind",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id,step:s.n})})).json(); }catch(e){ x={error:"Could not reach the engine."}; }
+      if(x.ok){ const nt=document.createElement("div"); nt.className="hkdim"; nt.textContent="went back to "+(s.n===0?"the start of the run":"step "+s.n); host.appendChild(nt); showSteps(id,host); }
+      else { uiAlert(x.error||"Could not go back."); ev.target.disabled=false; }
+    };
+    box.appendChild(row);
+  }
+}
+
+/* B2: look at what a run changed, block by block, and undo single blocks. The agent is not slowed down: this only runs after the run. */
+async function reviewChanges(id, host){
+  let box=host.querySelector(".hkbox"); if(!box){ box=document.createElement("div"); box.className="hkbox"; host.appendChild(box); }
+  box.innerHTML='<div class="hkdim">Loading the changes…</div>';
+  let r; try{ r=await(await fetch("/api/run-changes?runId="+encodeURIComponent(id))).json(); }catch(e){ r={error:"Could not reach the engine."}; }
+  if(r.error||r.ok===false){ box.innerHTML='<div class="hkdim">'+esc(r.error||"Could not load the changes.")+'</div>'; return; }
+  const files=r.files||[];
+  if(!files.length){ box.innerHTML='<div class="hkdim">No changed blocks to review.</div>'; return; }
+  box.innerHTML="";
+  for(const f of files){
+    const fd=document.createElement("div"); fd.className="hkfile";
+    const hunks=f.hunks||[], n=hunks.length;
+    const what=f.status==="added"?"new file":f.binary?"binary file":f.tooBig?"file too big to review":n+" change"+(n===1?"":"s");
+    fd.innerHTML='<div class="hkname">'+esc(f.file)+' <span class="hkdim">— '+what+'</span></div>';
+    if(f.status==="added"||f.binary||f.tooBig||!n){ fd.innerHTML+='<div class="hkdim">To undo this file, use “Revert this run”.</div>'; box.appendChild(fd); continue; }
+    for(const h of hunks){
+      const hd=document.createElement("div"); hd.className="hk";
+      const ln=(c,t,p)=>'<span class="'+c+'">'+p+esc(t)+'</span>';
+      const body=(h.before||[]).map(t=>ln("hkc",t,"  ")).concat((h.removed||[]).map(t=>ln("hkr",t,"- ")),(h.added||[]).map(t=>ln("hka",t,"+ ")),(h.after||[]).map(t=>ln("hkc",t,"  "))).join("");
+      const more=(h.removedTotal>(h.removed||[]).length||h.addedTotal>(h.added||[]).length)?'<span class="hkdim" style="display:block">… more lines in this change</span>':"";
+      hd.innerHTML='<div class="hkhead"><span>line '+esc(String(h.newStart))+' · −'+esc(String(h.removedTotal||0))+' +'+esc(String(h.addedTotal||0))+'</span><button class="btn g">Undo this change</button></div><pre>'+body+more+'</pre>';
+      hd.querySelector("button").onclick=async(ev)=>{
+        ev.target.disabled=true;
+        let x; try{ x=await(await fetch("/api/revert-hunks",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id,file:f.file,hunkIds:[h.id]})})).json(); }catch(e){ x={error:"Could not reach the engine."}; }
+        if(x.ok){ const nt=document.createElement("div"); nt.className="hkdim"; nt.textContent="undone: line "+h.newStart+" of "+f.file; host.appendChild(nt);
+          reviewChanges(id,host); /* reload: after one undo the ids of other blocks can (rarely) change */ }
+        else if(x.conflict){ uiAlert(x.error||"The file changed since this list was made."); reviewChanges(id,host); }
+        else { uiAlert(x.error||"Could not undo this change."); ev.target.disabled=false; }
+      };
+      fd.appendChild(hd);
+    }
+    box.appendChild(fd);
+  }
 }
 
 /* pasted image handling (analyzed engine-side via OCR + pixel stats, no vision model) */
@@ -1891,7 +2378,9 @@ async function send(){
   setAttachedFile(null);
   try{
     const r=await(await fetch("/api/message",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({message:t||"Describe what this image shows and anything notable.", ws:WS, ctxFile, autoApprove:$("auto").checked, image:img})})).json();
+    if(r.error){ chatMsg("eta",r.error); return; } // 2026-11-15c: a refused start (folder busy, too many runs) says why
     if(r.hint==="open_folder") setTimeout(()=>chatMsg("eta","Tip: open a workspace folder in the top bar and I can actually create these files for you — not just show them."),200);
+    if(r.hint==="nothing_to_continue") setTimeout(()=>chatMsg("eta","Nothing to continue in this folder: there is no unfinished run saved."),200);
     if(r.hint==="agent_needs_task") setTimeout(()=>chatMsg("eta","Type what you want done after @"+r.agent+" and press Enter."),200);
     if(r.hint==="skill_needs_task") setTimeout(()=>chatMsg("eta",`Type what you want done after /${r.skill} and press Enter — the skill will be forced in for that task.`),200);
   }catch(e){ chatMsg("eta","[error contacting engine]"); }
@@ -1907,23 +2396,37 @@ async function skillsList(){ if(_skCache&&_skCacheWs===WS) return _skCache; try{
 (function(){ const ci=$("chatin"); if(ci) ci.style.position="relative"; const m=$("slashmenu");
   Object.assign(m.style,{position:"absolute",left:"10px",right:"10px",bottom:"calc(100% + 6px)",background:"var(--elev,#0b0b0b)",border:"1px solid var(--border,#171717)",borderRadius:"10px",padding:"5px",zIndex:"40",maxHeight:"210px",overflow:"auto",boxShadow:"0 8px 28px rgba(0,0,0,.5)"}); })();
 function hideSlash(){ $("slashmenu").style.display="none"; }
+let _mentSeq=0;
 async function updateSlash(){
   const b=$("chatbox"), m=$("slashmenu"), v=b.value;
   const mm=v.match(/^[\/@]([\w-]*)$/); const isAt=v[0]==="@";
-  if(!mm){ hideSlash(); return; }
-  const q=mm[1].toLowerCase();
-  const wfs=isAt?[]:(await workflows()).filter(w=>w.name.toLowerCase().startsWith(q)).map(w=>({...w,kind:"workflow"}));
-  const sks=isAt?(await agentsList()).filter(s=>s.name.toLowerCase().startsWith(q)).map(s=>({...s,kind:"agent"})):(await skillsList()).filter(s=>s.name.toLowerCase().startsWith(q)).map(s=>({...s,kind:"skill"}));
-  const items=[...wfs,...sks];
+  // D3: "@" followed by letters anywhere in the message (before the cursor) offers files of the open folder
+  const cut=b.selectionStart==null?v.length:b.selectionStart, head=v.slice(0,cut), fm=WS?head.match(/(^|\s)@([^\s@"]*)$/):null;
+  if(!mm&&!fm){ hideSlash(); return; }
+  const seq=++_mentSeq; let items=[];
+  if(mm){
+    const q=mm[1].toLowerCase();
+    const wfs=isAt?[]:(await workflows()).filter(w=>w.name.toLowerCase().startsWith(q)).map(w=>({...w,kind:"workflow"}));
+    const sks=isAt?(await agentsList()).filter(s=>s.name.toLowerCase().startsWith(q)).map(s=>({...s,kind:"agent"})):(await skillsList()).filter(s=>s.name.toLowerCase().startsWith(q)).map(s=>({...s,kind:"skill"}));
+    items=[...wfs,...sks];
+  }
+  if(fm){ try{ const fr=await(await fetch("/api/mention-files?ws="+encodeURIComponent(WS)+"&q="+encodeURIComponent(fm[2]))).json(); items=[...items,...(fr.files||[]).map(p=>({name:p,kind:"file"}))]; }catch{} }
+  if(seq!==_mentSeq||b.value!==v) return; // the user kept typing: a newer call shows the list
   if(!items.length){ hideSlash(); return; }
   m.innerHTML=items.map(it=>{
+    if(it.kind==="file") return `<div class="slashitem" data-k="file" data-n="${esc(it.name)}" style="padding:6px 9px;border-radius:7px;cursor:pointer"><div style="font:600 12.5px var(--mono,monospace);color:var(--accent,#919191);word-break:break-all">@${esc(it.name)}<span style="font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2,#8a8a8a);border:1px solid var(--border,#171717);border-radius:4px;padding:1px 4px;margin-left:6px">file</span></div></div>`;
     const tag=(it.kind==="skill"||it.kind==="agent")?`<span style="font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--txt2,#8a8a8a);border:1px solid var(--border,#171717);border-radius:4px;padding:1px 4px;margin-left:6px">${it.kind}</span>`:"";
     return `<div class="slashitem" data-n="${it.name}" style="padding:7px 9px;border-radius:7px;cursor:pointer"><div style="font:600 12.5px var(--mono,monospace);color:var(--accent,#919191)">${isAt?"@":"/"}${it.name}${tag}</div><div style="font-size:11.5px;color:var(--txt2,#8a8a8a);margin-top:1px">${(it.description||"").replace(/</g,"&lt;")}${it.kind==="skill"?" — type your task after the name to run it with this skill forced in":it.kind==="agent"?" — type your task after the name":""}</div></div>`;
   }).join("");
-  m.querySelectorAll(".slashitem").forEach(el=>{ el.onmouseenter=()=>el.style.background="var(--card,#111111)"; el.onmouseleave=()=>el.style.background=""; el.onclick=()=>{ b.value=(isAt?"@":"/")+el.dataset.n+" "; hideSlash(); b.focus(); }; });
+  m.querySelectorAll(".slashitem").forEach(el=>{ el.onmouseenter=()=>el.style.background="var(--card,#111111)"; el.onmouseleave=()=>el.style.background=""; el.onclick=()=>{
+    if(el.dataset.k==="file"){ // put the file in place of the typed "@text" and keep the rest of the message
+      const p=el.dataset.n, ins="@"+(/\s/.test(p)?'"'+p+'"':p)+" ", start=head.length-fm[2].length-1;
+      b.value=v.slice(0,start)+ins+v.slice(cut); const pos=start+ins.length; b.setSelectionRange(pos,pos);
+    } else b.value=(isAt?"@":"/")+el.dataset.n+" ";
+    hideSlash(); b.focus(); }; });
   m.style.display="block";
 }
-$("chatbox").addEventListener("keydown",e=>{ if(e.key==="Escape"){ hideSlash(); return; } if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); hideSlash(); send(); } });
+$("chatbox").addEventListener("keydown",e=>{ if(e.key==="Escape"){ hideSlash(); return; } if(e.key==="Tab"&&$("slashmenu").style.display==="block"){ const f=$("slashmenu").querySelector(".slashitem"); if(f){ e.preventDefault(); f.click(); return; } } if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); hideSlash(); send(); } });
 $("chatbox").addEventListener("input",()=>{ const b=$("chatbox"); b.style.height="28px"; b.style.height=Math.min(b.scrollHeight,150)+"px"; updateSlash(); });
 $("chatlog").addEventListener("click",e=>{ const chip=e.target.closest(".chip"); if(chip){ $("chatbox").value=chip.dataset.q; $("chatbox").focus(); $("chatbox").dispatchEvent(new Event("input")); } });
 
@@ -2019,6 +2522,7 @@ const HSTAT={ready:"Running.",loading:"Loading into memory\u2026",sleeping:"Asle
 const HVERD={good:"fast enough",workable:"slow but workable",tooslow:"too slow for agent work"};
 function fmtLeft(s){ if(!s) return ""; return s>5400?(Math.round(s/360)/10)+" h left":s>90?Math.round(s/60)+" min left":s+" s left"; }
 function hostChip(){ const st=window._hostSt, el=$("chatin-model"); if(!el||!st||!st.active) return;
+  if(window._health&&window._health.cloud) return; // a cloud model is in use: the chip keeps the "cloud" status text
   const m={ready:["on",st.label],loading:["warn","Loading "+st.label],downloading:["warn","Downloading "+st.percent+"%"],sleeping:["idle",st.label+" (asleep)"],restarting:["warn","Restarting\u2026"],paused:["warn","Paused "+st.percent+"%"],error:["bad","Model problem"],stopped:["idle","Stopped"],"needs-download":["warn","Download needed"]}[st.status]||["",st.label];
   el.innerHTML='<span class="cmdot"></span>'+esc(m[1]); el.className="chatin-model"+(m[0]==="on"?" on":""); el.dataset.hs=m[0]; el.title="Model: "+st.label+". Click to manage models."; }
 function onHost(st){ window._hostSt=st; if(hostData) hostData.state=st; hostChip();
@@ -2034,7 +2538,7 @@ function modelsRender(){
     const cls=st.status==="ready"?"on":(st.status==="error"?"bad":(st.status==="sleeping"||st.status==="stopped"?"":"warn"));
     h+='<div class="mcard"><div class="mt"><span class="mdot '+cls+'"></span>'+esc(st.label)+'</div><div class="ms">'+esc(st.status==="error"?st.error:(st.status==="downloading"||st.status==="loading"?(st.message||HSTAT[st.status]):HSTAT[st.status]||st.message))+'</div>';
     if(st.status==="downloading"||st.status==="paused") h+='<div class="mbar"><i style="width:'+st.percent+'%"></i></div><div class="ms">'+st.percent+'% \u00b7 '+st.doneGB+' of '+st.totalGB+' GB'+(st.status==="downloading"?' \u00b7 '+st.speedMBs+' MB/s \u00b7 '+fmtLeft(st.etaS):'')+'</div>';
-    if(st.tokPerSec) h+='<div class="ms">Speed on this PC: <b>'+st.tokPerSec+' tokens per second</b> ('+(HVERD[st.verdict]||"")+'). A token is a small piece of a word.</div>';
+    if(st.tokPerSec) h+='<div class="ms">Speed on this PC: <b>'+esc(String(st.tokPerSec))+' words per second</b> ('+(HVERD[st.verdict]||"")+').</div>';
     h+='<div class="mbtns">';
     if(st.status==="downloading") h+='<button class="cbtn" data-a="pause">Pause</button><button class="cbtn" data-a="cancel">Cancel</button>';
     else if(st.status==="paused"||st.status==="needs-download") h+='<button class="cbtn pri" data-a="use" data-id="'+esc(st.modelId)+'">Resume download</button><button class="cbtn" data-a="cancel">Cancel</button>';
@@ -2043,6 +2547,9 @@ function modelsRender(){
     else h+='<button class="cbtn pri" data-a="restart">Start now</button>';
     h+='</div></div>';
     if(st.suggest) h+='<div class="msug">This model is too slow on your PC. <b>'+esc(st.suggest.label)+'</b> ('+st.suggest.sizeGB+' GB) is smaller and should be faster. <div class="mbtns"><button class="cbtn pri" data-a="use" data-id="'+esc(st.suggest.id)+'">Switch to it</button></div></div>';
+    const hc=window._health||{};
+    if(hc.cloud) h+='<div class="cloudcard"><div class="cc-t">A cloud model is active: '+esc(String(hc.model||""))+'.</div><div class="cc-p">Your code is sent to '+esc(cloudHostOf(hc.base))+'.</div><div class="cc-btns"><button class="cc-b pri" data-cc="back">Back to the local model</button></div></div>';
+    else if(st.cloudHint&&!cloudCardOff()) h+=cloudCardHtml({tokPerSec:st.tokPerSec});
     h+='<div class="midle">Free memory when idle: <select id="midle">'+[[0,"Never"],[10,"After 10 minutes"],[30,"After 30 minutes"],[60,"After 1 hour"],[240,"After 4 hours"]].map(o=>'<option value="'+o[0]+'"'+(o[0]===st.idleMin?" selected":"")+'>'+o[1]+'</option>').join("")+'</select></div>';
   } else h+='<div class="mcard"><div class="mt">No local model chosen yet</div><div class="ms">Pick one below. The IDE downloads it once and runs it on this PC.</div></div>';
   h+='<div class="mh">Models for this PC'+(hostData.hw?' ('+esc(hostData.hw.gpu||"no graphics card")+(hostData.hw.vramGB?", "+hostData.hw.vramGB+" GB":"")+", "+hostData.hw.ramGB+" GB memory)":"")+'</div>';
@@ -2055,6 +2562,8 @@ function modelsRender(){
   h+='<div class="ms" style="margin-top:12px">Files are saved in '+esc(hostData.dir)+(hostData.hw&&hostData.hw.diskFreeGB?' ('+hostData.hw.diskFreeGB+' GB free)':'')+'.</div>';
   M.innerHTML=h;
   const sel=$("midle"); if(sel) sel.onchange=()=>hostPost("idle",{min:+sel.value});
+  wireCloudCard(M, modelsRender);
+  const bk=M.querySelector('[data-cc="back"]'); if(bk) bk.onclick=async()=>{ await cloudBackToLocal(window._health); modelsLoad(); };
   M.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{ const a=b.dataset.a;
     if(a==="use") await hostPost("use",{id:b.dataset.id}); else if(a==="custom"){ const v=$("mcustom").value.trim(); if(v) await hostPost("use",{spec:v}); }
     else if(a==="remove"){ if(await uiConfirm("Delete this model file from your PC?","Delete","Cancel")){ await hostPost("remove",{id:b.dataset.id}); modelsLoad(); } }
@@ -2116,14 +2625,14 @@ function renderManager(){
     const card=document.createElement("div"); card.className="mgr-card";
     let acts="";
     if(r.status==="running") acts+='<button class="btn g wcancel">Cancel</button>';
-    if(r.canMerge) acts+='<button class="btn wmerge">✓ Merge</button>';
+    if(r.canMerge) acts+='<button class="btn wmerge">Merge</button>';
     if(r.conflicted) acts+='<button class="btn wtheirs">Keep agent’s version</button><button class="btn g wours">Keep current</button>';
     if(r.canMerge||r.conflicted) acts+='<button class="btn g wdiscard">Discard</button>';
-    acts+='<button class="btn g wwt">📄 Walkthrough</button>';
-    const conflictNote=r.conflicted?'<div class="mgr-conflict">⚠ conflicts with your current files. Choose which version to keep, or discard.</div>':'';
+    acts+='<button class="btn g wwt">Walkthrough</button>';
+    const conflictNote=r.conflicted?'<div class="mgr-conflict">Conflicts with your current files. Choose which version to keep, or discard.</div>':'';
     card.innerHTML='<div class=t>'+esc(r.task)+'</div>'+
       '<div class=meta><span class="mgr-badge '+st+'">'+st+'</span>'+(r.branch?'<span class=mgr-branch>'+esc(r.branch)+'</span>':'')+((r.files&&r.files.length)?'<span>'+r.files.length+' files</span>':'')+'</div>'+
-      '<div class=mgr-live>'+(a.lines.slice(-12).map(esc).join("\n")||"…")+'</div>'+conflictNote+
+      '<div class=mgr-live>'+(a.lines.slice(-12).map(x=>esc(noEmoji(x))).join("\n")||"…")+'</div>'+conflictNote+
       '<div class=acts>'+acts+'</div>';
     const doMerge=async(e,strategy)=>{ e.target.disabled=true; e.target.textContent="merging…"; const d=await(await fetch("/api/merge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:r.id,strategy})})).json(); if(d.conflict) uiAlert("Still conflicts on: "+((d.files||[]).join(", ")||r.branch)+". Pick a version to keep, or discard."); loadTree(); };
     const wt=card.querySelector(".wwt"); if(wt) wt.onclick=()=>window.open("/api/walkthrough?format=html&id="+r.id,"_blank");
@@ -2143,8 +2652,8 @@ function mgrOnEvent(m){
   else if(m.type==="tool"){ const k=m.args&&(m.args.path||m.args.command||m.args.query||m.args.question); a.lines.push("  "+m.name+(k?" "+String(k).slice(0,38):"")); }
   else if(m.type==="gate") a.lines.push("  "+(m.ok?"✓":"✗")+" "+m.file);
   else if(m.type==="worktree") a.lines.push("⎇ "+m.branch);
-  else if(m.type==="review") a.lines.push(m.approved?"🔍 approved":"🔍 needs work");
-  else if(m.type==="done") a.lines.push("✔ done");
+  else if(m.type==="review") a.lines.push(m.approved?"approved":"needs work");
+  else if(m.type==="done") a.lines.push(m.status==="not-done"?"not done: "+String(m.verdict||""):"done");
   else if(m.type==="error") a.lines.push("⚠ "+String(m.text||"error").slice(0,48));
   else return;
   if(mgrOpen()) renderManager();
@@ -2174,7 +2683,7 @@ function renderPlan(){
   $("plantab").innerHTML='<div style="font-size:10.5px;color:var(--txt3);letter-spacing:.08em">PLAN '+(doneAll?items.length:0)+'/'+items.length+'</div>'
     +'<div class="planbar"><i style="width:'+(doneAll?100:10)+'%"></i></div>'
     +items.map(s=>'<div class="plitem'+(doneAll?' done':'')+'"><span class="ck">'+(doneAll?'✓':'')+'</span><span>'+esc(s.replace(/^\d+[.)]\s*/,""))+'</span></div>').join("")
-    +(doneAll?('<div class="mhint" style="margin-top:10px">🧾 gates '+(P.g||0)+'✓'+((P.gn||0)?' '+P.gn+'✗':'')+' · commands '+(P.c||0)+((P.cf||0)?' ('+P.cf+' failed)':'')+'</div>')
+    +(doneAll?('<div class="mhint" style="margin-top:10px">gates '+(P.g||0)+'✓'+((P.gn||0)?' '+P.gn+'✗':'')+' · commands '+(P.c||0)+((P.cf||0)?' ('+P.cf+' failed)':'')+'</div>')
               :'<div class="mhint" style="margin-top:10px">agent working…</div>');
 }
 const AGENTS=[
@@ -2189,6 +2698,28 @@ const AGENTS=[
  ["regression","🧪","Test Gate","project tests must pass before review",1],
 ];
 const agentState={role:null,running:false};
+const agentLog={}, agentLive={}, agentEndT={};
+const AG_LBL={context:"Context",skills:"Skills",analyst:"Analyst",planner:"Planner",executor:"Coder",browser:"Browser check",regression:"Test gate",reviewer:"Reviewer",critic:"Critic",memory:"Memory",gate:"Gatekeeper",knowledge:"Knowledge judge"};
+const AG_DESC={context:"collects the files the task needs",skills:"loads the skills that fit the task",analyst:"reads the task and the code",planner:"plans the steps",executor:"does the work, one action at a time",browser:"opens the page and checks it",regression:"runs the project tests",reviewer:"judges the result",critic:"checks the result against the goal",memory:"keeps notes for later",gate:"checks syntax and packages",knowledge:"retries weak code searches"};
+function agRecord(id,role,t,replay){ const L=agentLog[id]||(agentLog[id]=[]); const last=L[L.length-1]; if(!(last&&last.role===role)) L.push({role:role,t:t||Date.now()}); agentLive[id]=!replay; delete agentEndT[id]; agPillUpdate(); }
+function agEnd(id,t){ if(agentLog[id]){ agentLive[id]=false; agentEndT[id]=t||Date.now(); } agPillUpdate(); }
+function agCount(){ return Object.keys(agentLive).filter(k=>agentLive[k]).length; }
+function agPillUpdate(){ const n=agCount(), b=$("agpill"), t=$("agpill-n"); if(!b||!t) return; t.textContent=n+(n===1?" agent":" agents"); b.classList.toggle("on",n>0); }
+function agDur(ms){ const s=Math.max(0,Math.round(ms/1000)); return s<60?s+"s":Math.floor(s/60)+"m "+String(s%60).padStart(2,"0")+"s"; }
+function agMapOpen(){
+  const ids=Object.keys(agentLog).reverse().slice(0,4), n=agCount();
+  $("agmap-sub").textContent=n+(n===1?" agent":" agents")+" working now";
+  $("agmap-body").innerHTML=ids.length?ids.map(id=>{
+    const L=agentLog[id], live=!!agentLive[id], end=agentEndT[id]||Date.now();
+    const task=(runs[id]&&(runs[id].task||(runs[id].meta&&runs[id].meta.task)))||"";
+    return '<div class="agrun"><div class="agrun-t"><span>'+(task?esc(String(task).slice(0,70)):"Run "+esc(id))+'</span><span>'+(live?"working":"finished")+'</span></div>'
+      +L.map((e,i)=>{ const nx=L[i+1], on=live&&i===L.length-1, t1=nx?nx.t:end;
+        return '<div class="agc'+(on?' live':'')+'"><span class="agdot"></span><span><div class="agn">'+esc(AG_LBL[e.role]||e.role)+'</div><div class="agd">'+esc(AG_DESC[e.role]||"")+'</div></span><span class="agt">'+agDur(t1-e.t)+'</span></div>'; }).join("")+'</div>';
+  }).join(""):'<div class="agmap-empty">No agent has worked yet. Ask Eta to build or fix something and the agents will show here.</div>';
+  $("agmap").style.display="flex";
+}
+(function(){ const b=$("agpill"), m=$("agmap"); if(!b||!m) return; b.addEventListener("click",agMapOpen); $("agmap-x").addEventListener("click",()=>{ m.style.display="none"; }); m.addEventListener("click",e=>{ if(e.target===m) m.style.display="none"; }); document.addEventListener("keydown",e=>{ if(e.key==="Escape") m.style.display="none"; }); })();
+
 function renderAgents(){
   $("agentstab").innerHTML=AGENTS.map(a=>{
     const live=agentState.running&&agentState.role===a[0];
@@ -2214,11 +2745,39 @@ function genBlock(id,file){
   return genBlocks[k];
 }
 function dropGen(id,file){ const k=id+"|"+file; if(genBlocks[k]){ genBlocks[k].wrap.remove(); delete genBlocks[k]; } }
-function fileCardHead(file,meta,openBtn){
-  return '<div class="fhead"><b>'+esc(file)+'</b>'+meta+(openBtn?'<span class="fopen" data-f="'+esc(file)+'">Open in editor →</span>':'')+'</div>';
+/* PHASE 3: Keep / Undo for ONE file edit, also while the run works. The edit is already on disk (the checkers need it).
+   Undo puts back exactly the bytes from before this edit; the engine refuses when the file changed since. All text via textContent. */
+const editBars={};
+function editBar(id,m){
+  if(!m||!m.editId||editBars[m.editId]) return;
+  const c=taskCard(id);
+  let host=[...c.querySelectorAll(".fcard")].reverse().find(x=>x.dataset.file===m.file&&!x.dataset.edit);
+  if(!host){ host=wline(id,fileCardHead(m.file||"",'<span style="color:var(--txt3)">'+(m.created?"created":"changed")+'</span>',true),"fcard"); host.dataset.file=m.file||""; wireFileCard(host); }
+  host.dataset.edit=m.editId;
+  const bar=document.createElement("div"); bar.className="ebar"; bar.dataset.edit=m.editId;
+  const k=document.createElement("button"); k.type="button"; k.className="ebtn ekeep"; k.textContent="Keep";
+  const u=document.createElement("button"); u.type="button"; u.className="ebtn eundo"; u.textContent=(m.hunks>1?"Undo whole edit":"Undo");
+  u.title=m.created?"Remove this new file":(m.hunks>1?"This edit changed "+m.hunks+" places. Undo puts all of them back.":"Put back the file as it was before this edit");
+  const st=document.createElement("span"); st.className="est";
+  const msg=document.createElement("span"); msg.className="emsg";
+  bar.append(k,u,st,msg); host.appendChild(bar); editBars[m.editId]=bar;
+  const go=async(what)=>{ k.disabled=u.disabled=true; msg.textContent="";
+    let r; try{ r=await(await fetch("/api/edit/"+what,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({runId:id,editId:m.editId,ws:WS})})).json(); }catch(e){ r={error:"I could not reach the engine."}; }
+    if(r&&r.ok) editStatus(m.editId,r.status,r.how); else { k.disabled=u.disabled=false; msg.textContent=String((r&&r.error)||"That did not work."); } };
+  k.onclick=()=>go("keep"); u.onclick=()=>go("undo");
+}
+function editStatus(editId,status,how){
+  const bar=editBars[editId]; if(!bar) return;
+  bar.querySelectorAll(".ebtn").forEach(b=>b.remove()); bar.querySelector(".emsg").textContent="";
+  bar.dataset.status=status||"";
+  bar.querySelector(".est").textContent=status==="kept"?"Kept":status==="undone"?(how==="block-merged"?"Undone (only this change; later changes stay)":"Undone"):"";
+}
+function fileCardHead(file,meta,openBtn,line){
+  return '<div class="fhead"><b>'+esc(file)+'</b>'+meta+(openBtn?'<span class="fopen" data-f="'+esc(file)+'"'+(line?' data-l="'+(+line||0)+'"':'')+'>Open in editor</span>':'')+'</div>';
 }
 function wireFileCard(d){
-  const o=d.querySelector(".fopen"); if(o) o.onclick=()=> EMBED ? openInHost(o.dataset.f) : openFile(o.dataset.f,true);
+  const o=d.querySelector(".fopen"); if(o) o.onclick=()=>openRef(o.dataset.f,+o.dataset.l||0);
+  const cv=d.querySelector(".codeview"), fh=d.querySelector(".fhead"); if(cv&&fh) addCopy(fh,()=>cv.textContent);
   const sm=d.querySelector(".showmore");
   if(sm) sm.onclick=()=>{ d.querySelectorAll(".dl.hid,.cl.hid").forEach(x=>x.classList.remove("hid")); sm.remove(); };
 }
@@ -2248,9 +2807,10 @@ async function loadHistory(){
         const r=d.runs[h.runId]; if(!r) continue;
         runs[h.runId]=r.meta;
         for(const ev of r.events) taskEvent(ev, true);
+        if(r.meta&&r.meta.status==="running"&&agentLog[h.runId]){ agentLive[h.runId]=true; delete agentEndT[h.runId]; agPillUpdate(); } // still working on the engine: count it after a reload
       }
     }
-    $("chatlog").scrollTop=$("chatlog").scrollHeight;
+    toBottom();
   }catch{}
 }
 const sse = new EventSource("/events");
@@ -2260,15 +2820,45 @@ loadHistory();
 let _tmHide=null;
 function tmeter(m){
   const el=$("tmeter"); if(!el) return;
+  if(anyLive()){ el.style.display="none"; return; } // while a task card is working, its own status line shows this (never twice)
   const n=(x)=>Number(x||0).toLocaleString("en-US"), t=(s)=>s>=60?Math.floor(s/60)+" min "+(s%60)+" s":s+" s";
   const tok=(m.exact?"":"about ")+n(m.written)+" tokens written · "+n(m.read)+" read";
   let txt;
   if(m.phase==="reading") txt='<span class="tm-dot"></span>Reading the task… '+t(m.waitSec)+(m.written||m.read?" · "+tok:"");
   else if(m.phase==="writing") txt='<span class="tm-dot"></span>Writing · '+tok+(m.perSec?" · "+m.perSec+" per second":"")+" · "+t(m.seconds);
+  else if(m.phase==="waiting") txt='<span class="tm-dot"></span>Waiting for your OK · '+tok+" · "+t(m.seconds);
   else txt="Done · "+tok+(m.perSec?" · "+m.perSec+" per second":"")+" · "+t(m.seconds);
-  el.innerHTML=txt; el.style.display=(m.written||m.read||m.busy)?"":"none";
-  clearTimeout(_tmHide); if(!m.busy) _tmHide=setTimeout(()=>{ el.style.display="none"; },20000);
+  // D5: how full the model's memory window is right now (the last call's prompt against the window size)
+  if(m.ctxMax&&m.ctxUsed){ const hot=m.ctxPct>=85?"color:var(--red,#f48771);font-weight:600":m.ctxPct>=70?"color:var(--amber,#cca700)":""; txt+=' · <span style="'+hot+'" title="'+n(m.ctxUsed)+' of '+n(m.ctxMax)+' tokens used by the last request. A full window leaves no room for more text.">Memory '+m.ctxPct+'% full</span>'; }
+  el.innerHTML=txt; el.style.display=(m.written||m.read||m.busy||m.waiting)?"":"none";
+  clearTimeout(_tmHide); if(!m.busy&&!m.waiting) _tmHide=setTimeout(()=>{ el.style.display="none"; },20000);
 }
+// folder trust: a folder's own hooks and tool servers stay off until the user says the folder is trusted (engine: pathguard.mjs).
+// Shown only when the folder really has such files and is not trusted. "Not now" hides it until the panel is opened again.
+var _trustSkip={};
+// The list of what would run. File content goes in ONLY through textContent (never innerHTML): a command that looks like HTML stays text.
+function trustList(box, det){
+  box.replaceChildren();
+  const add=(par,tag,txt,title)=>{ const n=document.createElement(tag); if(txt!=null) n.textContent=txt; if(title) n.title=title; par.appendChild(n); return n; };
+  const hooks=Array.isArray(det.hooks)?det.hooks:[], servers=Array.isArray(det.servers)?det.servers:[];
+  if(hooks.length){ add(box,"div","Commands this folder runs (.eta/hooks.json):").className="th"; const ul=add(box,"ul");
+    for(const h of hooks){ const li=add(ul,"li"); add(li,"span",(h.when?h.when+" ":"")+(h.match?"("+h.match+"): ":"")); add(li,"code",h.run?.text||"",h.run?.full); } }
+  if(servers.length){ add(box,"div","Tool servers this folder starts ("+(det.serversFile||"mcp.json")+"):").className="th"; const ul=add(box,"ul");
+    for(const s of servers){ const li=add(ul,"li"); add(li,"span",s.name+": "); add(li,"code",[s.command?.text,s.args?.text].filter(Boolean).join(" "),[s.command?.full,s.args?.full].filter(Boolean).join(" "));
+      if(s.env) { add(li,"span"," with settings "); add(li,"code",s.env.text,s.env.full); } } }
+}
+async function checkTrust(){
+  const el=$("trustbar"); if(!el) return; const ws=WS; el.style.display="none";
+  if(!ws||_trustSkip[ws]) return;
+  try{ const d=await(await fetch("/api/trust?ws="+encodeURIComponent(ws))).json(); if(ws!==WS||!d.needsDecision) return;
+    const ch=$("trust-changed"); ch.textContent=d.changed?"The hooks or tool servers changed since you trusted this folder. Check them again.":""; ch.style.display=d.changed?"":"none";
+    trustList($("trust-list"), d.details||{});
+    $("trust-yes").onclick=async()=>{ el.style.display="none"; try{ const r=await fetch("/api/trust",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({ws,trusted:true,fingerprint:d.fingerprint||""})}); if(r.status===409) checkTrust(); }catch{} };
+    $("trust-no").onclick=()=>{ _trustSkip[ws]=1; el.style.display="none"; };
+    el.style.display="flex";
+  }catch{}
+}
+checkTrust();
 // update notice: a newer Eta IDE is on the official release page (no automatic download). Closing it hides that version only.
 function updNotice(u){
   const el=$("upd"); if(!el||!u||!u.available) return;
@@ -2282,7 +2872,7 @@ fetch("/api/update").then(r=>r.json()).then(updNotice).catch(()=>{});
 sse.onmessage = e=>{
   const m = JSON.parse(e.data);
   if(m.type==="update"){ updNotice(m); return; }
-  if(m.type==="meter"){ tmeter(m); return; }
+  if(m.type==="meter"){ liveMeter(m); tmeter(m); return; }
   if(m.type==="term"){ if(term && m.id===termId) term.write(m.data); return; }
   if(m.type==="termExit"){ if(m.id===termId){ term.writeln("\r\n\x1b[33m[session ended — press Enter to restart]\x1b[0m"); termId=null; } return; }
   if(m.type==="run"){ runs[m.run.id]=m.run; if(mgrOpen()) renderManager(); return; }
@@ -2293,9 +2883,11 @@ sse.onmessage = e=>{
   if(m.type==="merge"||m.type==="discard"){ mgrOnEvent(m); return; }
   if(m.type==="chat" && m.role==="user"){ return; }
   if(m.type==="chatStart"){ curChat=chatMsg("eta",""); return; }
-  if(m.type==="chatDelta"){ if(!curChat) curChat=chatMsg("eta",""); curChat.dataset.raw=(curChat.dataset.raw||"")+m.delta; curChat.innerHTML=mdBlock(curChat.dataset.raw); $("chatlog").scrollTop=$("chatlog").scrollHeight; return; }
+  if(m.type==="chatDelta"){ if(!curChat) curChat=chatMsg("eta",""); curChat.dataset.raw=(curChat.dataset.raw||"")+m.delta; keepBottom(()=>{ curChat.innerHTML=mdBlock(noEmoji(curChat.dataset.raw)); decorateCopy(curChat); linkRefs(curChat); }); return; }
   if(m.type==="chatEnd"){ curChat=null; return; }
-  if(m.type==="reverted"){ if(mine(m.runId)){ const c=cards[m.runId]; if(c){ const d=document.createElement("div"); d.className="wgate ok"; d.textContent="↩ workspace restored to the snapshot"; c.appendChild(d); } } loadTree(); if(openPath) openFile(openPath); return; }
+  if((m.type==="hunks-reverted"||m.type==="rewound"||m.type==="reverted")&&proofHosts[m.runId]) showProof(m.runId,proofHosts[m.runId]); // the proof card shows the files as they are now
+  if(m.type==="hunks-reverted"||m.type==="rewound"){ loadTree(); if(openPath) openFile(openPath); return; }
+  if(m.type==="reverted"){ if(mine(m.runId)){ const c=cards[m.runId]; if(c){ const d=document.createElement("div"); d.className="wgate ok"; d.textContent="Workspace restored to the snapshot"; c.appendChild(d); } } loadTree(); if(openPath) openFile(openPath); return; }
   if(m.type==="log" && /^✎ (created|edited) /.test(m.text||"")){ if(mine(m.runId)){ const p=m.text.replace(/^✎ (created|edited) /,"").split(" ")[0]; onFileTouched(p); } }
   mgrOnEvent(m);
   if(m.runId!==undefined && !(runs[m.runId]&&runs[m.runId].isolated)) taskEvent(m);

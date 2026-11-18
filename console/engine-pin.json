@@ -1,0 +1,603 @@
+{
+  "name": "Colibri",
+  "version": "2.1.0",
+  "source": "https://github.com/JustVugg/colibri",
+  "created": "2026-11-13T02:51:24.092Z",
+  "files": [
+    {
+      "path": "autotune.py",
+      "size": 29442,
+      "sha256": "8395a73200094f31136f34df5fe23467fae120faeed3ef001366abdaa6e898a9"
+    },
+    {
+      "path": "cluster.py",
+      "size": 7666,
+      "sha256": "1758bb404e7053cb255e9eb452e60ba53f6e026564d201d2388f11136c1bc1d8"
+    },
+    {
+      "path": "coli",
+      "size": 234575,
+      "sha256": "40693ba8899f2efafc56a24cf276a6c55eb7e4bfcc5b389692f60c6094e79428"
+    },
+    {
+      "path": "coli.cmd",
+      "size": 3379,
+      "sha256": "e98a0ad422a3422395a881b5ed744565238caad03b0f162aa10d8520278c9f46"
+    },
+    {
+      "path": "colibri.exe",
+      "size": 3415521,
+      "sha256": "542585b06759ff9079a496ba8dc2ebc8b36e2ff66f2b8bd918608c2c323f1f16"
+    },
+    {
+      "path": "deepseek_v4.exe",
+      "size": 3874677,
+      "sha256": "d2556efa01ee8a3beaf21d9a2bdf5fbd6028f32632a556eee482a8ced4522007"
+    },
+    {
+      "path": "deepseek_v41.exe",
+      "size": 2875931,
+      "sha256": "115b38fbdf0dfda38c8179ae9d9c6888ade4b54d3d2a19091b52426b6278ecdd"
+    },
+    {
+      "path": "doctor.py",
+      "size": 50772,
+      "sha256": "15e674411ab25b612f84ea6fd954ca9969606839e552e95c3935b98fc472238e"
+    },
+    {
+      "path": "family_registry.py",
+      "size": 117520,
+      "sha256": "1a0458545e902dff3d9ec61f348c06087af653e364fd8a3757f0617ded8255b9"
+    },
+    {
+      "path": "gliner_decide.exe",
+      "size": 2464496,
+      "sha256": "ef8a5b5176d6fadfac219bc1fa6456009867d86870e367378e83b1648d26ae20"
+    },
+    {
+      "path": "glm53.exe",
+      "size": 2748040,
+      "sha256": "93940296f8a46fee78a967fd9df58d758c51a01fab115666bcee70c591d81bef"
+    },
+    {
+      "path": "image_engine.py",
+      "size": 45579,
+      "sha256": "88da879fb6fd63d234d140312e6919bc44a0ba7974d26a2c4018f737c757628c"
+    },
+    {
+      "path": "inkling.exe",
+      "size": 2739016,
+      "sha256": "14c19f11681fc49ae005ffd31d3c3f7a0173c0f4332f2ec3d4c503d517668300"
+    },
+    {
+      "path": "kimi_k3.exe",
+      "size": 2797558,
+      "sha256": "dca8c9f0d59cd0752d1eca9b808f9bf6c045fe4fc29d52a31d75b21f122838bf"
+    },
+    {
+      "path": "laya.exe",
+      "size": 2463646,
+      "sha256": "f1e034e77118c2e8c455224aa593fc32cbc077b89d2bfd89b431003ea42212c9"
+    },
+    {
+      "path": "mcp_server.py",
+      "size": 21938,
+      "sha256": "0c8a6cbcec35a9d647d35ab3c77bc745298772a7df2319779b093843bb92fead"
+    },
+    {
+      "path": "mimo.exe",
+      "size": 2673234,
+      "sha256": "b9f8b5d03a3a78b789d426eaf47715cfb07efc6d20281a8a25fc5243c0d915d7"
+    },
+    {
+      "path": "olmoe.exe",
+      "size": 2721093,
+      "sha256": "c28d65d8b89e6100d76a92c93e52f0e057c476d69d576e17f9b037fce188e635"
+    },
+    {
+      "path": "openai_server.py",
+      "size": 567537,
+      "sha256": "3f6c8c199468d43b24c97cc1eac1ab222782e1c3edb6ed1ac6223d63ff0522a5"
+    },
+    {
+      "path": "qwen36.exe",
+      "size": 3590462,
+      "sha256": "31af27c7716b3202e32c898764023ac879f98d5ecbf8ea36841f47dd3702d125"
+    },
+    {
+      "path": "qwen38.exe",
+      "size": 3444800,
+      "sha256": "b720ced9fb67a08200dfbe88cd0e25ca57a019a93c7171af74da05bf1fc97caf"
+    },
+    {
+      "path": "qwenimage.exe",
+      "size": 2574936,
+      "sha256": "6762422bb333d2c45d7069de14b7f73a9f32fd35424d9cb156f77664a7d3a354"
+    },
+    {
+      "path": "resource_plan.py",
+      "size": 199943,
+      "sha256": "401bdbcb7fafce71ee586caaa1718d34aaa184cd3490042776029dbbaec53dc4"
+    },
+    {
+      "path": "setup_catalog.py",
+      "size": 14315,
+      "sha256": "d4c2a245034e7651ca483c842af25354f9b4da01e284081a6b0db2c9f54d2d31"
+    },
+    {
+      "path": "setup_download.py",
+      "size": 21829,
+      "sha256": "ed9cc2b43e765eacde3392fc011693d89bf86c74d18ee7af6dd27eb3d28a8149"
+    },
+    {
+      "path": "setup_flow.py",
+      "size": 113688,
+      "sha256": "d64ebc6a4617f73afbcdbc660c7e3c301c46214e2229e715258380806498b891"
+    },
+    {
+      "path": "setup_hw.py",
+      "size": 42901,
+      "sha256": "ff61a6231097f793b553b616837c7d4af6cbf234096071f46f5ee58680ddde37"
+    },
+    {
+      "path": "shaders/attention_absorb.spv",
+      "size": 27604,
+      "sha256": "42b33fa2eef3fb4cb095774453ff594ccbb4a7edb982917e35a1f4ded00537b7"
+    },
+    {
+      "path": "shaders/chain_ares.spv",
+      "size": 11348,
+      "sha256": "d87301fd26119217b59ef1c1168f675d57c70bcba0d556ae606d9f2c0a58c3f5"
+    },
+    {
+      "path": "shaders/chain_attn.spv",
+      "size": 16512,
+      "sha256": "04be7bab8cd70c25f62e19910a9f0905425ce2f50a9d3ca98edb23193aa3a439"
+    },
+    {
+      "path": "shaders/chain_attn_coop.spv",
+      "size": 20264,
+      "sha256": "9bd4d28234cf9413ed06bb57847ee168ef739847fcac4f2a003083410e62912b"
+    },
+    {
+      "path": "shaders/chain_attn_dec.spv",
+      "size": 54608,
+      "sha256": "17e21cb50649088bd47f5d974382f0cc39795759871a83c1ec1e23825ba3ce47"
+    },
+    {
+      "path": "shaders/chain_attn_flash.spv",
+      "size": 32784,
+      "sha256": "89ab26267a8cd5228a419868175a9d0f16aaa673d4ee3ae2683eea399d3c6591"
+    },
+    {
+      "path": "shaders/chain_attn_full.spv",
+      "size": 20704,
+      "sha256": "0c8095932f34f8875c406e272e9ea3b38f8193f3e191b91f2ae412a9f4fad9b2"
+    },
+    {
+      "path": "shaders/chain_attnb.spv",
+      "size": 25624,
+      "sha256": "45d36a3a637435e0ea43b12cf6a3728af30baace4e269fe7623407ed642558ab"
+    },
+    {
+      "path": "shaders/chain_copy2d.spv",
+      "size": 7320,
+      "sha256": "361df7d0552ec17c48de948f7f95626ab64f48e911d2dbee28d92a8959ffee9b"
+    },
+    {
+      "path": "shaders/chain_dnconv.spv",
+      "size": 9252,
+      "sha256": "50ecd5b08be6f1dcf19c199db4305eeed8934ccc6cd465f1aa631cd3109d604e"
+    },
+    {
+      "path": "shaders/chain_dnconv_rows.spv",
+      "size": 10680,
+      "sha256": "05256291b33a14a898c676fe1bae5292b072ac5e77195933c39ec2c4a5afb3f8"
+    },
+    {
+      "path": "shaders/chain_dnrec.spv",
+      "size": 18500,
+      "sha256": "d338f7f69978b03b9a5c909b5348f2270cbea93b66d08c61852deeed32302d81"
+    },
+    {
+      "path": "shaders/chain_dnrec_rows.spv",
+      "size": 21880,
+      "sha256": "f529d1e701dff30ad8375654c5cce836c16ff475cb96356d7a1dc7b0a7bd4679"
+    },
+    {
+      "path": "shaders/chain_dsa.spv",
+      "size": 42984,
+      "sha256": "2511e4351b5a56c2a74fabcb7770921e0de64d03ea0599568ddfc061f5756f43"
+    },
+    {
+      "path": "shaders/chain_dsv4.spv",
+      "size": 84168,
+      "sha256": "39a5b34b54651ec68b6e48ee93a2a6169f718bb222585bc851eb25d4cabc6f30"
+    },
+    {
+      "path": "shaders/chain_enc.spv",
+      "size": 43016,
+      "sha256": "32e091756b87d63dad4ea38268bfbe7f12d68b259b373938974a909631e1046e"
+    },
+    {
+      "path": "shaders/chain_ew.spv",
+      "size": 16832,
+      "sha256": "0a5fe549d7f769977180c7a2afdf1febd987773ed1087dd75eae355ac68fb5aa"
+    },
+    {
+      "path": "shaders/chain_fetch.spv",
+      "size": 6900,
+      "sha256": "c0b75aedcbe99132a6c803cfe9697dc1c32de3c23a76c87c3b4ae232dd1e0389"
+    },
+    {
+      "path": "shaders/chain_gemm.spv",
+      "size": 24108,
+      "sha256": "de90e03f276a87b3f9db4067db2a575d331ba11bd4d6a38d1faf78980100689a"
+    },
+    {
+      "path": "shaders/chain_gemv.spv",
+      "size": 35288,
+      "sha256": "0e69b60ac031ae7f07ac12dc6cb54c43e50bc853eb42c48fd9e77328a46b4890"
+    },
+    {
+      "path": "shaders/chain_gemv2.spv",
+      "size": 24564,
+      "sha256": "6428831ad70b024df81dd42beeb1965f6426feeaa49b0c3370549929348f530b"
+    },
+    {
+      "path": "shaders/chain_gemv_bd.spv",
+      "size": 78248,
+      "sha256": "6945ccadcd6691917faefadbad4eebc3cd69903bae4ec72736e9c361c5620d84"
+    },
+    {
+      "path": "shaders/chain_gemv_bd_i8.spv",
+      "size": 87040,
+      "sha256": "90735cc6bd3b1773e58620bba56a79836fafd1e3921df42121279c8befc7da02"
+    },
+    {
+      "path": "shaders/chain_hgemv.spv",
+      "size": 17680,
+      "sha256": "e645d60d4a83385c65fff90d152d2da0397ed59706f7b79210f5dd070e089acc"
+    },
+    {
+      "path": "shaders/chain_kda.spv",
+      "size": 21408,
+      "sha256": "f63d810a5a4b073275db182964e44910814dcf235d7173638ff0e432477e203b"
+    },
+    {
+      "path": "shaders/chain_kda_rows.spv",
+      "size": 20764,
+      "sha256": "4e9fc6311f215c425a4fc34b2c973947618db3635d2160ed68688d0e092959ce"
+    },
+    {
+      "path": "shaders/chain_kvs.spv",
+      "size": 83088,
+      "sha256": "60d88043cae8547852b3951421325b1d83fd4570cf71379a7392468db9ce9668"
+    },
+    {
+      "path": "shaders/chain_mhc.spv",
+      "size": 22956,
+      "sha256": "880471deb8f6873d2bf1892c90f3893078a833467b80d501d020a3239223c294"
+    },
+    {
+      "path": "shaders/chain_mla.spv",
+      "size": 25156,
+      "sha256": "bc6f4f30bbf1940c3b8b6e50d20ab721dea480d6bcc3e9722f8ce977433e5e2b"
+    },
+    {
+      "path": "shaders/chain_mla_dec.spv",
+      "size": 18960,
+      "sha256": "8a9b775e30e27b0e461d8ce01d3737a1ba28873693cba83ef77c276fcc057c4a"
+    },
+    {
+      "path": "shaders/chain_moe.spv",
+      "size": 265500,
+      "sha256": "313268a827b00fce891f358fef8d366b1a3c07a9df313c0320a870d5d9d353c2"
+    },
+    {
+      "path": "shaders/chain_moe_gv.spv",
+      "size": 59164,
+      "sha256": "93274401a5e1a48ad261b17f9c78b60c4f9cc1ea81c6422bcc1e2d1a69dede17"
+    },
+    {
+      "path": "shaders/chain_moe_i8.spv",
+      "size": 339568,
+      "sha256": "31807b020b554f5a15fd8e0e85ea9f9706ee27a55a31572d93c33c4a9c5c3f95"
+    },
+    {
+      "path": "shaders/chain_moe_rows.spv",
+      "size": 19372,
+      "sha256": "e64816b2acb551d4de51f07825c290d65694843b56e9ca7184fdd9c2807f37f5"
+    },
+    {
+      "path": "shaders/chain_norm.spv",
+      "size": 17108,
+      "sha256": "cf7afd4f67708f84178daca9e689be4d7428f6f8223b3d3bf984471ca21ead8e"
+    },
+    {
+      "path": "shaders/chain_ple.spv",
+      "size": 17468,
+      "sha256": "79c28db749bdfa4d688bd13f7e4d7a3316760958c27f2bf3b26771a9bbe78ff9"
+    },
+    {
+      "path": "shaders/chain_qsa.spv",
+      "size": 22324,
+      "sha256": "a88f13bef9be4e532ca6a6d9820f08dbeaf0e98fe00bafa15c29e368c6f2c73a"
+    },
+    {
+      "path": "shaders/chain_relattn.spv",
+      "size": 16352,
+      "sha256": "9824b8eb33eb3290f932406aa1a9b3dfbf9f24f8fc75f90d8971d5795c122645"
+    },
+    {
+      "path": "shaders/chain_rope.spv",
+      "size": 4004,
+      "sha256": "5b56f9bf439cd53789ad7a6185916e27e2872f68a800586248b7b6f09f9b4e4e"
+    },
+    {
+      "path": "shaders/chain_route.spv",
+      "size": 34556,
+      "sha256": "21401d196f1520d201dc27cd24c9b77fde6be986154786e566f4a55f38badc62"
+    },
+    {
+      "path": "shaders/chain_sconv.spv",
+      "size": 7012,
+      "sha256": "e1c000ba4931a2350cfff759dec7c9128ddc734b6ba459655250d4904ff70881"
+    },
+    {
+      "path": "shaders/chain_vae.spv",
+      "size": 6524,
+      "sha256": "705ec01628970c756a675ce152eaed91918d20872d9375094ebceb5678ab14df"
+    },
+    {
+      "path": "shaders/expert_act.spv",
+      "size": 6232,
+      "sha256": "9782c9143ad3b38e70febc242cc10c2871c96d481b8a367f790443aa11dcd4d5"
+    },
+    {
+      "path": "shaders/expert_act_v4.spv",
+      "size": 7976,
+      "sha256": "e36cc1e7ff0786fefbd51c84fe76441ad14837bc0a5da6e5b75af37080b22c27"
+    },
+    {
+      "path": "shaders/expert_sum.spv",
+      "size": 3112,
+      "sha256": "595637d7329169ed807a94c9ecc437141bcb56643204773c08d845c155547ab0"
+    },
+    {
+      "path": "shaders/qmatmul.spv",
+      "size": 29220,
+      "sha256": "450457af2b8130ee0687dc88e8a360512743121c98b0ce421226b5e225dc6bb3"
+    },
+    {
+      "path": "shaders/qmatmul_bd.spv",
+      "size": 105092,
+      "sha256": "9101a0f2426cb79ed73b2f62e6b991a6f98b536d90bdb711b1c4a4933dac6866"
+    },
+    {
+      "path": "shaders/qmatmul_coop.spv",
+      "size": 39924,
+      "sha256": "6e3e5c65cd691798c35046e3e72f7a1e7c03c005c5e0d6d8f3225ed7e179c7e8"
+    },
+    {
+      "path": "shaders/qmatmul_gate_up.spv",
+      "size": 31916,
+      "sha256": "126f2c57866389580cd55f226cb8716bdd22109375a604dc1f115a672a970b50"
+    },
+    {
+      "path": "shaders/qmatmul_gate_up_bd.spv",
+      "size": 173276,
+      "sha256": "92d8c47a3dad5791232c7d0b77ef0fec25283e15fe4d8470fbaad45c33b0773f"
+    },
+    {
+      "path": "shaders/qmatmul_gemm.spv",
+      "size": 39720,
+      "sha256": "1e1bd5c8c5c1b0757d703f6cd8ca8d52e39c245aeaf45cac15b96191ac9a98cb"
+    },
+    {
+      "path": "shaders/qmatmul_gemm_bd.spv",
+      "size": 66576,
+      "sha256": "d1be537d8304c32ec1374a3a3818da5f8ff5eb5dfd673c748d876ff450f58cd1"
+    },
+    {
+      "path": "shaders/qmatmul_gemm_bdc.spv",
+      "size": 70464,
+      "sha256": "50efe5f104d54a43a97971e3732ffe87cce27d1553708e9f76dc62cdf691e5be"
+    },
+    {
+      "path": "shaders/qmatmul_gemm_bdcw.spv",
+      "size": 70128,
+      "sha256": "9e21456a119181fc9abff2a3d699021afe5cd95fa701bf2a62da8300a15bc895"
+    },
+    {
+      "path": "shaders/qmatmul_grp.spv",
+      "size": 29348,
+      "sha256": "f2aa61e9d380fe9201024d41d8501c4687a4ea972794c093906d3b2373c7fce5"
+    },
+    {
+      "path": "shaders/qmatmul_grp_bd.spv",
+      "size": 71284,
+      "sha256": "5eb869caee40aa9a779cf2c0bea8e7dc36a60ed88646e6431b8bd4560fbd8f03"
+    },
+    {
+      "path": "shaders/qmatmul_grp_bdc.spv",
+      "size": 76228,
+      "sha256": "0065d56e3cb6f9ce4e1765a41da58f3541ee8ebe0bf09c4dccb2f69aaa9b17fe"
+    },
+    {
+      "path": "shaders/qmatmul_grp_bdcw.spv",
+      "size": 77240,
+      "sha256": "fbfad78178ac4e596018fea9ad8307d0a80b4faa5a22fc3268ccad501e79e352"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up.spv",
+      "size": 37148,
+      "sha256": "b3ba0a5542e223e13a089c9373810826af10b0a1e4544b918a8f5c86b2142273"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up_bd.spv",
+      "size": 73536,
+      "sha256": "3ca190406a5267b1dc496bab4722b823b5a92b65916e7ab07dcfe0afdd12b463"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up_bdc.spv",
+      "size": 77944,
+      "sha256": "6df942219011db90198bda5f9207680c65221dfe29e66a3ef458065d2c774183"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up_bdcw.spv",
+      "size": 79508,
+      "sha256": "cbdee57ed4ee5ef92bef7feb839de613121f01b93efc21eb5582a4b765e68deb"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up_q.spv",
+      "size": 18008,
+      "sha256": "12941f41ceeb38b55e8a4bda559cd4681ab8bf70ed631f8c3f735c7bf5259159"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gate_up_qc.spv",
+      "size": 31028,
+      "sha256": "3760c55bc5ac3f5a6a07d8a55e867aad00d7ca788fb11f12bd3594d103814ec0"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gemv.spv",
+      "size": 29816,
+      "sha256": "9130e028185ac544c9cf7a2d966b5844165f3e38dbe3b8dabf65ef5ae4088ad6"
+    },
+    {
+      "path": "shaders/qmatmul_grp_gemv_gate_up.spv",
+      "size": 33712,
+      "sha256": "2e9862e401bd6c2673840b11a286e7ca61f2912f2a9ecb51389239d1efd40dfd"
+    },
+    {
+      "path": "shaders/qmatmul_grp_q.spv",
+      "size": 14956,
+      "sha256": "be0e40eafefb35ea666cb842a0d59babc42842ecbe295c4a6e8c55b67611892d"
+    },
+    {
+      "path": "shaders/qmatmul_grp_qc.spv",
+      "size": 29004,
+      "sha256": "4b693d596f80a3900d4d29b07b82330b82debe49fc62a0a2634b57d6ed96a7bf"
+    },
+    {
+      "path": "shaders/rmsnorm.spv",
+      "size": 4216,
+      "sha256": "90c42c993db6a2ec474e52229196b8d55fedf6ba0f2a5801296b6a08c08c6176"
+    },
+    {
+      "path": "term_image.py",
+      "size": 24000,
+      "sha256": "acbcf9da45deaaf131b6cbea890e61aafc41b74f7e7015ba0c1e0859afc3678f"
+    },
+    {
+      "path": "tools/check_ablate_evidence.py",
+      "size": 20087,
+      "sha256": "f3805388e505f36313a6e8e8174619d858409fbb463eb5d7f93370017edda6f5"
+    },
+    {
+      "path": "tools/convert_fp8_to_int4.py",
+      "size": 79801,
+      "sha256": "4b989469f4c8d348c33889aaa4eab067ffde2f58dbb56f222c20d85501fb7355"
+    },
+    {
+      "path": "tools/convert_glm53.py",
+      "size": 22881,
+      "sha256": "ef62210b549f8a8f8bb7d200b94818fb3df5ff5a5e7eecb47ab4c6ce0331ab88"
+    },
+    {
+      "path": "tools/convert_olmoe_merged.py",
+      "size": 11507,
+      "sha256": "e0ef8ffe5037f071cbeea6962d316345ed7c8cdb3cda42d840fda848167484c9"
+    },
+    {
+      "path": "tools/dsv41_image.py",
+      "size": 5218,
+      "sha256": "2d408ec5b1ff9a9d67071dfd758d5e5001bca2b4033559e00dd457b9438a08c3"
+    },
+    {
+      "path": "tools/engine_environment.py",
+      "size": 939,
+      "sha256": "042599bebd45ba0b7b06fd42bfa756ffd1e1423f697eb892cbc4bc7567ed956d"
+    },
+    {
+      "path": "tools/engine_evidence.py",
+      "size": 6577,
+      "sha256": "cd0e0e2b7879d6561a7ca41d891b5129440887fc2da0c219bd91154bd4460b0e"
+    },
+    {
+      "path": "tools/eval_glm.py",
+      "size": 33932,
+      "sha256": "0bfb5cec4163afccce951f2725293de339e568c1e465c186ec5669cd8e9722b8"
+    },
+    {
+      "path": "tools/fetch_benchmarks.py",
+      "size": 5463,
+      "sha256": "f91b3502080bffb58fb5657437189f714a4302af85c3fae1e45202132277b0e5"
+    },
+    {
+      "path": "tools/gguf_import.py",
+      "size": 91764,
+      "sha256": "2151502f8410ac2605995aeabc4c03da021407e9444810f44d6ed577a26049b8"
+    },
+    {
+      "path": "tools/gguf_reader.py",
+      "size": 14620,
+      "sha256": "1a8c9d4c71e4c7c88710cfe27e3299cc2f309b9d826cfc19835fa7d78761b8a5"
+    },
+    {
+      "path": "tools/glm53_image.py",
+      "size": 9907,
+      "sha256": "7b2e9199b1d3ca0b3cbe37d11b99c05c0ca6025da156a269263360c0082954f9"
+    },
+    {
+      "path": "tools/iq3_pack.py",
+      "size": 14219,
+      "sha256": "865925182b66d1a51dec5dfe59b81d673e497cb9d46fbeb3f250a2c0f5bf71ae"
+    },
+    {
+      "path": "tools/iq3xxs_grid.json",
+      "size": 4377,
+      "sha256": "2a1c497570276ce25c572241d08c8d454b3490990b8cbd77264b496d123d5d51"
+    },
+    {
+      "path": "tools/k3_tokenizer.py",
+      "size": 10308,
+      "sha256": "8c64bedd3cf3309cfb7952c8f2c98ef7d32e6e2bef310a97a0f46a2707a3d0f3"
+    },
+    {
+      "path": "tools/mirror_plan.py",
+      "size": 19257,
+      "sha256": "8db4a0c667fede299e2462ec27811106339456e646781554695e809a0f99f580"
+    },
+    {
+      "path": "tools/mistral_image.py",
+      "size": 6341,
+      "sha256": "f8089b560219045b553a1163db44014e1ffecc8a9d638b5ff42b5f861c8a086a"
+    },
+    {
+      "path": "tools/ml4_mmproj.py",
+      "size": 14554,
+      "sha256": "7269224f1dd787d195c797428057a16ccc21c3cca19af5675b5e84ab7d0b329a"
+    },
+    {
+      "path": "tools/qwen38_image.py",
+      "size": 10969,
+      "sha256": "88d5535915983a3bf69c74c5a3369bebb7e72717b93e11fa89d6a8910ccaed0b"
+    },
+    {
+      "path": "v41_dsml.py",
+      "size": 15572,
+      "sha256": "03c08b1a66a29ee96f337b07503b4a0c2800d268b127e77e863cb09c390fdaff"
+    },
+    {
+      "path": "v4_dsml.py",
+      "size": 10906,
+      "sha256": "eceac3ef26c73d699521d0e7db2903adaed37fbbce0c42bab88c751d2e12370c"
+    },
+    {
+      "path": "version.py",
+      "size": 87,
+      "sha256": "40e7d8aacf5a777901db186e4549be58976e0001c28e4811ac2fefd72372c49f"
+    }
+  ]
+}
